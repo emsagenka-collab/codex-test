@@ -43,3 +43,26 @@ test("unsupported files fail clearly", async () => {
     /TXT-, PDF- oder EPUB/,
   );
 });
+
+test("legacy Turkish PDF characters survive extraction and are recoverable", async () => {
+  const { repairTurkishText } = await import("../lib/text-repair");
+  const bytes = readFileSync(
+    new URL("./fixtures/legacy-turkish.pdf", import.meta.url),
+  );
+  const raw = await extractText(new File([bytes], "legacy.pdf"));
+  assert.ok(raw.includes("komﬂularla"));
+  assert.match(
+    repairTurkishText(raw),
+    /doğru korumayı, komşularla paylaşmayı öğrendi/,
+  );
+  // This is the extraction mode used by previously installed versions.
+  const { PDFParse } = await import("pdf-parse");
+  const parser = new PDFParse({ data: bytes });
+  try {
+    const old = await parser.getText();
+    assert.ok(old.text.includes("komflularla"));
+    assert.match(repairTurkishText(old.text), /komşularla paylaşmayı/);
+  } finally {
+    await parser.destroy();
+  }
+});

@@ -13,8 +13,25 @@ import {
   tokens,
   matches,
 } from "./learning";
+import { hasLegacyTurkishGlyphs, repairTurkishText } from "./text-repair";
 import type { Entry, Settings, State, Word } from "./types";
 let connection: DatabaseSync;
+const legacyBooks = new Map<number, boolean>();
+function legacyBook(bookId: number) {
+  if (!legacyBooks.has(bookId))
+    legacyBooks.set(
+      bookId,
+      hasLegacyTurkishGlyphs(
+        all(
+          "SELECT originalText FROM TextSection WHERE bookId=? ORDER BY sectionNumber",
+          bookId,
+        )
+          .map((s) => String(s.originalText))
+          .join("\n\n"),
+      ),
+    );
+  return legacyBooks.get(bookId)!;
+}
 export function db() {
   if (connection) return connection;
   const dir = process.env.KELIME_DATA_DIR || path.join(process.cwd(), "data");
@@ -30,17 +47,15 @@ export function db() {
  CREATE TABLE IF NOT EXISTS DailyWords (date TEXT PRIMARY KEY, word1 INTEGER REFERENCES VocabularyWord(id), word2 INTEGER REFERENCES VocabularyWord(id));
  CREATE TABLE IF NOT EXISTS Activity (day TEXT NOT NULL, wordId INTEGER REFERENCES VocabularyWord(id), UNIQUE(day,wordId));
  CREATE TABLE IF NOT EXISTS AppMeta (key TEXT PRIMARY KEY, value TEXT NOT NULL);`);
-  connection
-    .prepare("INSERT OR IGNORE INTO User VALUES (1,?)")
-    .run(
-      JSON.stringify({
-        level: "B2",
-        theme: "light",
-        textSize: "normal",
-        reminder: "19:00",
-        timezone: "Europe/Berlin",
-      }),
-    );
+  connection.prepare("INSERT OR IGNORE INTO User VALUES (1,?)").run(
+    JSON.stringify({
+      level: "B2",
+      theme: "light",
+      textSize: "normal",
+      reminder: "19:00",
+      timezone: "Europe/Berlin",
+    }),
+  );
   return connection;
 }
 function all(sql: string, ...args: (string | number)[]) {
@@ -77,6 +92,7 @@ export function importBook(
   isDemo = false,
   extra: Entry[] = [],
 ) {
+  const legacy = !isDemo && hasLegacyTurkishGlyphs(text);
   const sections = splitSections(text);
   if (!sections.length)
     throw new Error(
@@ -93,7 +109,7 @@ export function importBook(
       entry,
       occurrences: sections.flatMap((section, i) =>
         sentences(section)
-          .filter((s) => containsWord(s, entry.word))
+          .filter((s) => containsWord(repairTurkishText(s, legacy), entry.word))
           .map((sentence) => ({ section, i, sentence })),
       ),
     }))
@@ -144,12 +160,14 @@ export function importBook(
             occ.section,
             isDemo
               ? lexicon.find((e) => e.demo === occ.sentence)?.translation || ""
-              : extra.includes(entry) && entry.demo === occ.sentence
+              : extra.includes(entry) &&
+                  entry.demo === repairTurkishText(occ.sentence, legacy)
                 ? entry.translation
                 : "",
             isDemo
               ? lexicon.find((e) => e.demo === occ.sentence)?.context || ""
-              : extra.includes(entry) && entry.demo === occ.sentence
+              : extra.includes(entry) &&
+                  entry.demo === repairTurkishText(occ.sentence, legacy)
                 ? entry.context
                 : "",
           );
@@ -188,16 +206,25 @@ function vocabulary(): Word[] {
     `SELECT v.id,v.data,p.*,v.id AS vocabularyId FROM VocabularyWord v JOIN LearningProgress p ON p.wordId=v.id WHERE EXISTS (SELECT 1 FROM WordOccurrence WHERE wordId=v.id)`,
   ).map((row) => {
     const o = one(
-      `SELECT o.*,s.sectionNumber,b.title,b.isDemo FROM WordOccurrence o JOIN TextSection s ON s.id=o.sectionId JOIN Book b ON b.id=s.bookId WHERE o.wordId=? ORDER BY (b.id=?) DESC,(o.sentence=?) DESC,b.isDemo ASC,o.id ASC LIMIT 1`,
+      `SELECT o.*,s.sectionNumber,b.title,b.isDemo,b.id AS bookId FROM WordOccurrence o JOIN TextSection s ON s.id=o.sectionId JOIN Book b ON b.id=s.bookId WHERE o.wordId=? ORDER BY (b.id=?) DESC,(o.sentence=?) DESC,b.isDemo ASC,o.id ASC LIMIT 1`,
       Number(row.vocabularyId),
       active,
       JSON.parse(String(row.data)).demo,
     );
+    const legacy = !o.isDemo && legacyBook(Number(o.bookId));
+    const sentence = repairTurkishText(String(o.sentence), legacy);
+    const section = repairTurkishText(String(o.surroundingText), legacy);
     return {
       ...JSON.parse(String(row.data)),
       id: Number(row.vocabularyId),
-      sentence: String(o.sentence),
-      section: String(o.surroundingText),
+      sentence,
+      section,
+      originalSentence:
+        sentence !== String(o.sentence) ? String(o.sentence) : null,
+      originalSection:
+        section !== String(o.surroundingText)
+          ? String(o.surroundingText)
+          : null,
       sectionNumber: Number(o.sectionNumber),
       source: String(o.title),
       demoBook: !!o.isDemo,
@@ -351,6 +378,7 @@ export function rate(id: number, rating: string) {
   }
 }
 export function reset() {
+  legacyBooks.clear();
   db().exec("BEGIN IMMEDIATE");
   try {
     db().exec(

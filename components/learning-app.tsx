@@ -209,7 +209,7 @@ export default function LearningApp() {
             <SettingsIcon size={18} /> Einstellungen
           </button>
           <div className="profile">
-            <div className="avatar">S</div>
+            <div className="avatar">ÖFT</div>
             <div>
               Dein Lernweg<small>In deinem Tempo.</small>
             </div>
@@ -795,7 +795,9 @@ export default function LearningApp() {
                     Wenig, aber mit Bedeutung.
                   </span>
                 </span>
-                <span>Mit Ruhe lernen.</span>
+                <span className="creator-credit">
+                  Hersteller: <strong>Ömer Faruk Takkaç</strong>
+                </span>
               </footer>
             </>
           )}

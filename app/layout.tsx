@@ -5,6 +5,8 @@ export const metadata: Metadata = {
   description:
     "Türkische Wörter entdecken, im Kontext verstehen und langfristig behalten. Deine ruhige Lernbibliothek.",
   applicationName: "Kelime",
+  authors: [{ name: "Ömer Faruk Takkaç" }],
+  creator: "Ömer Faruk Takkaç",
 };
 export default function Layout({ children }: { children: React.ReactNode }) {
   return (

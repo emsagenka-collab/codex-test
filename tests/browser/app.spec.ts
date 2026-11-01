@@ -96,29 +96,55 @@ test("mobile import, daily lesson, persistence and all navigation", async ({
   await expect(page.locator("article.word-card")).toHaveCount(2);
   await page.screenshot({ path: "/tmp/kelime-desktop.png", fullPage: true });
   await page.getByRole("button", { name: /Eigenen Text importieren/ }).click();
-  await page
-    .locator("input[type=file]")
-    .setInputFiles({
-      name: "leer.txt",
-      mimeType: "text/plain",
-      buffer: Buffer.from(""),
-    });
+  await page.locator("input[type=file]").setInputFiles({
+    name: "leer.txt",
+    mimeType: "text/plain",
+    buffer: Buffer.from(""),
+  });
   await page.getByRole("button", { name: /Text analysieren &/ }).click();
   await expect(page.getByRole("dialog").getByRole("alert")).toContainText(
     "Kein lesbarer Text",
   );
-  await page
-    .locator("input[type=file]")
-    .setInputFiles({
-      name: "mein-buch.txt",
-      mimeType: "text/plain",
-      buffer: Buffer.from(
-        "Önemli bir karar vermeden önce arkadaşlarıyla istişare etti.\n\nBütün engellere rağmen yolunda sebat etti.",
-      ),
-    });
+  await page.locator("input[type=file]").setInputFiles({
+    name: "mein-buch.txt",
+    mimeType: "text/plain",
+    buffer: Buffer.from(
+      "Önemli bir karar vermeden önce arkadaşlarıyla istişare etti.\n\nBütün engellere rağmen yolunda sebat etti.",
+    ),
+  });
   await page.getByRole("button", { name: /Text analysieren &/ }).click();
   await expect(page.getByText("Deine Quelle:")).toBeVisible();
   await expect(page.locator(".source-footer")).toContainText("mein-buch");
+  await expect(page.getByText("Hersteller:")).toContainText(
+    "Ömer Faruk Takkaç",
+  );
+  const rawText =
+    "Emaneti do€ru korumay› ve komflularla paylaflmay› ö€rendi.\n\nTefekkür ederken haklar›n› düflündü.";
+  const legacy = await request.post("/api/import", {
+    multipart: {
+      file: {
+        name: "alte-schrift.txt",
+        mimeType: "text/plain",
+        buffer: Buffer.from(rawText),
+      },
+    },
+  });
+  const legacyState = await legacy.json();
+  expect(legacyState.ok).toBe(true);
+  await page.reload();
+  await expect(
+    page.locator("article").first().locator(".example>blockquote"),
+  ).toContainText("doğru korumayı ve komşularla paylaşmayı öğrendi");
+  await page
+    .locator("article")
+    .first()
+    .getByText("PDF-Schriftzeichen berichtigt")
+    .click();
+  await expect(
+    page.locator("article").first().locator(".source-repair blockquote"),
+  ).toContainText("do€ru");
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect(page.getByText("Hersteller:")).toBeVisible();
   const pdf = await request.post("/api/import", {
     multipart: {
       file: {

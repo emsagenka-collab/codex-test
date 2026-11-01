@@ -73,6 +73,29 @@ test("source provenance, stable daily selection, real imports, and persisted rat
     );
     assert.ok(tomorrow.due.some((w) => w.id === first.daily[0].id));
     t.mock.timers.reset();
+    const raw =
+      "Emaneti do€ru korumay›, komﬂularla paylaﬂmay› ö€rendi.\n\nTefekkür ederken haklar›n› düﬂündü.";
+    const learningBefore = JSON.stringify(exportData().progress);
+    const todayBefore = JSON.stringify(exportData().daily);
+    const legacy = importBook("Ältere PDF-Schrift", raw);
+    const displayed = state();
+    const emanet = displayed.vocabulary.find((w) => w.word === "emanet")!;
+    assert.match(
+      emanet.sentence,
+      /doğru korumayı, komşularla paylaşmayı öğrendi/,
+    );
+    assert.match(emanet.originalSentence!, /do€ru/);
+    assert.equal(JSON.stringify(exportData().progress), learningBefore);
+    assert.equal(JSON.stringify(exportData().daily), todayBefore);
+    const importedRaw = exportData()
+      .sections.filter((s) => s.bookId === legacy.bookId)
+      .map((s) => s.originalText)
+      .join("\n\n");
+    assert.equal(importedRaw, raw);
+    assert.match(
+      state().vocabulary.find((w) => w.word === "emanet")!.sentence,
+      /doğru/,
+    );
   } finally {
     db().close();
     rmSync(dir, { recursive: true, force: true });

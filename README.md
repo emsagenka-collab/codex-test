@@ -80,3 +80,15 @@ Chromium wird unter `/usr/bin/chromium` erwartet. Alternativ `PLAYWRIGHT_CHROMIU
 ## Windows mit automatischer Einrichtung
 
 `scripts/install-windows.ps1 -Revision <vollstaendige-Commit-SHA>` lädt eine portable Node.js-24-Laufzeit von nodejs.org herunter, prüft ihre SHA-256-Prüfsumme anhand der offiziellen Liste und lädt diese App aus dem angegebenen GitHub-Commit. Installation unter `%LOCALAPPDATA%\Kelime`, ohne Administratorrechte. Der Installer richtet eine Desktopverknüpfung ein und startet die App. Der Datenordner bleibt separat unter `%LOCALAPPDATA%\Kelime\data`. Vorhandene vollständige App-Installationen werden weiterverwendet; unvollständige Ordner nicht überschrieben. Ein Internetzugang ist für die Ersteinrichtung erforderlich. Der Installer benötigt Windows PowerShell 5.1 oder neuer.
+
+## Türkische PDF-Schriften und Windows-Updates
+
+Hersteller: **Ömer Faruk Takkaç**.
+
+Ältere türkische PDFs können Schriftcodes wie `do€ru`, `haklar›n›` und `komﬂularla` enthalten. Die App erkennt charakteristische Muster und stellt die entsprechenden türkischen Zeichen für Anzeige und Worterkennung wieder her. Auch die von früheren PDF.js-Versionen zu ASCII `fl`/`fi` normalisierten Ligaturen werden anhand einer begrenzten Liste türkischer Wortstämme berücksichtigt. Korrekt kodierter Text, Währungsangaben und normale `fl`-Verbindungen werden nicht pauschal ersetzt. Dies ist keine allgemeine OCR- oder Rechtschreibkorrektur.
+
+Die unveränderte Extraktion bleibt in SQLite gespeichert und ist bei berichtigten Lernkarten aufklappbar. Dadurch wirken die Anzeigeberichtigungen auch auf bereits importierte Bücher, ohne Lernbewertungen, Tagesauswahl oder Originaltext zu überschreiben. PDF-Importe bewahren Ligaturen jetzt vor der Schriftkorrektur.
+
+`scripts/update-windows.ps1 -Revision <Commit-SHA>` aktualisiert die vorhandene portable Windows-Installation. Zuerst das Kelime-Startfenster schließen. Der Updater prüft den Download und installiert Pakete in einem separaten Ordner, sichert die bisherige App und den Datenordner unter `%LOCALAPPDATA%\Kelime\backups`, bewahrt lokale `.env`-Dateien und lässt externe Lerndaten an ihrem Ort. Scheitert der Ordneraustausch, wird die bisherige App zurückverschoben. Die Desktopverknüpfung bleibt gültig.
+
+Zusätzliche PowerShell-Prüfung: `pwsh -NoProfile -File tests/windows-update.ps1` verwendet isolierte temporäre Dateien und simulierte Windows-/Downloadfunktionen für Erfolg, Installationsfehler, laufende App und Rollback. Sie ersetzt keinen Test auf einem echten Windows-Laptop.

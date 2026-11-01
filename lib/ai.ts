@@ -1,6 +1,8 @@
+import { repairTurkishText } from "./text-repair";
 import type { Entry } from "./types";
 import { containsWord, sentences, splitSections } from "./learning";
 export async function analyzeWithAI(text: string): Promise<Entry[]> {
+  text = repairTurkishText(text);
   if (!process.env.OPENAI_API_KEY)
     throw new Error("Keine KI-Anbindung eingerichtet.");
   const response = await fetch("https://api.openai.com/v1/chat/completions", {

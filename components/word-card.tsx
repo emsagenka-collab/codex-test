@@ -95,6 +95,19 @@ export default function WordCard({
             vor. Das Wort bedeutet hier: {w.meaning}.
           </p>
         )}
+        {w.originalSentence && (
+          <details className="source-repair">
+            <summary>
+              PDF-Schriftzeichen berichtigt <ChevronDown size={14} />
+            </summary>
+            <p>
+              Die Zeichen ğ, ı und ş wurden aus einer älteren Schriftkodierung
+              wiederhergestellt. Der Inhalt wurde nicht ergänzt. Unveränderte
+              Textextraktion:
+            </p>
+            <blockquote lang="tr">{w.originalSentence}</blockquote>
+          </details>
+        )}
         <div className="in-context">
           <span>IM SATZ</span>
           <p>
@@ -125,6 +138,15 @@ export default function WordCard({
                 Originalabschnitt lesen <ChevronDown size={14} />
               </summary>
               <p lang="tr">{w.section}</p>
+              {w.originalSection && (
+                <details className="source-repair">
+                  <summary>
+                    Unveränderte Textextraktion anzeigen{" "}
+                    <ChevronDown size={14} />
+                  </summary>
+                  <p lang="tr">{w.originalSection}</p>
+                </details>
+              )}
             </details>
             <small>
               {w.source} · Abschnitt {w.sectionNumber}

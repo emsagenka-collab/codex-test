@@ -15,7 +15,10 @@ export async function extractText(file: File) {
         throw new Error(
           "Bitte PDFs mit mehr als 1.000 Seiten in kleinere Teile aufteilen.",
         );
-      const result = await parser.getText({ pageJoiner: "\n\n" });
+      const result = await parser.getText({
+        pageJoiner: "\n\n",
+        disableNormalization: true,
+      });
       return result.text;
     } finally {
       await parser.destroy();

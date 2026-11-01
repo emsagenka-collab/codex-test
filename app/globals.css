@@ -1979,3 +1979,38 @@ details[open] > summary > svg {
   margin-top: 18px;
   font-size: 12px;
 }
+.page-footer {
+  flex-wrap: wrap;
+}
+.page-footer > span.creator-credit {
+  display: block;
+  font-size: 10px;
+  color: var(--muted);
+}
+.creator-credit strong {
+  font-weight: 500;
+  color: var(--green);
+}
+.source-repair {
+  border-top: 1px solid var(--line);
+  margin: 12px 0;
+}
+.source-repair summary {
+  font-size: 10px;
+}
+.source-repair p {
+  font-size: 11px;
+  color: var(--muted);
+}
+.source-repair blockquote {
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+@media (max-width: 760px) {
+  .page-footer > span.creator-credit {
+    display: block;
+    width: 100%;
+    font-size: 10px;
+    margin-top: 5px;
+  }
+}

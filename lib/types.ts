@@ -13,6 +13,8 @@ export type Entry = {
 export type Word = Entry & {
   id: number;
   sentence: string;
+  originalSentence: string | null;
+  originalSection: string | null;
   section: string;
   sectionNumber: number;
   source: string;

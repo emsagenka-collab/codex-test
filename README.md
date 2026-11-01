@@ -35,15 +35,25 @@ Sind weniger ungesehene passende Wörter als gewünscht vorhanden, zeigt die App
 
 ## Beispielsätze aus dem Fließtext
 
-Die Satzwahl überspringt erkennbare Kapitelüberschriften, Inhaltsverzeichniseinträge,
-reine Seitenzahlen und unvollständige Satzfragmente. Alphabetische Unterpunkte
-wie „a) Habeşistan’a hicret edenler“ und entsprechend gekennzeichnete
-Inhaltsverzeichnis-Abschnitte werden ebenfalls ausgeschlossen. Das gilt beim Import und
-auch beim Anzeigen bereits gespeicherter Vorkommen. Originaltext, Schreibweise,
-Bewertungen und Tagesauswahl bleiben erhalten. Kann für ein bereits gelerntes
-Wort kein vollständiger Satz gefunden werden, zeigt die Karte einen Hinweis.
-Die Erkennung verwendet Layout- und Sprachmerkmale, keine vollständige
-Grammatikanalyse; ungewöhnliche Buchlayouts können weiterhin Sonderfälle enthalten.
+Die Auswahl lässt nur Ausschnitte mit erkennbarer Satzstruktur zu.
+Kapitelüberschriften, Inhaltsverzeichnisse, Tabellenblöcke, nummerierte und
+alphabetische Listen sowie andere Aufzählungen werden vor dem Zerlegen in Sätze
+ausgeschlossen. Auch bei älteren Vorkommen wird der ursprüngliche Abschnitt
+erneut geprüft, damit eine beim Satzsplit entfernte Nummerierung oder
+Tabellenspalte nicht einen falschen Fließtextsatz entstehen lässt.
+Originaltext, Bewertungen und Tagesauswahl bleiben erhalten. Ist kein geeigneter
+Beleg vorhanden, zeigt die Karte einen Hinweis statt eines solchen Ausschnitts.
+Die automatische Erkennung bleibt von den im PDF extrahierbaren Layoutmerkmalen
+abhängig und ist keine vollständige Grammatikanalyse.
+
+Unter **Einstellungen → PDF-Seiten ausschließen** können zusätzlich ganze
+Seitenbereiche des aktiven Buches gesperrt werden, etwa `6-8, 25`.
+Das gilt sofort für Beispielsätze und neue Tageswörter, bleibt gespeichert und
+betrifft nur dieses Buch. Maßgeblich ist die PDF-Seite. Ein Satz, dessen
+Seitenbereich eine gesperrte Seite berührt, wird ebenfalls ausgeschlossen.
+Bei alten Quellen ohne Seitenzuordnung sind Ausschnitte bei aktiver Sperre
+vorsorglich ausgeschlossen; ein erneuter PDF-Import erfasst die Seiten.
+Leeren des Feldes hebt die Sperre auf; Bewertungen werden nicht gelöscht.
 
 ## PDF-Seitenangaben
 

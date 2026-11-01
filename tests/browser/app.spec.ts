@@ -261,6 +261,22 @@ test("mobile import, daily lesson, persistence and all navigation", async ({
   await expect(emanetCard.locator(".source-location")).toContainText(
     "PDF-Seite 2",
   );
+  await page.getByRole("button", { name: "Einstellungen öffnen" }).click();
+  await page.getByLabel("PDF-Seiten ausschließen", { exact: true }).fill("2");
+  await page.getByRole("button", { name: "Einstellungen speichern" }).click();
+  await expect(emanetCard.locator(".example")).toHaveCount(0);
+  await page.reload();
+  await expect(emanetCard.locator(".example")).toHaveCount(0);
+  await page.getByRole("button", { name: "Einstellungen öffnen" }).click();
+  await expect(
+    page.getByLabel("PDF-Seiten ausschließen", { exact: true }),
+  ).toHaveValue("2");
+  await page.getByLabel("PDF-Seiten ausschließen", { exact: true }).fill("");
+  await page.getByRole("button", { name: "Einstellungen speichern" }).click();
+  await expect(emanetCard.locator(".source-location")).toContainText(
+    "PDF-Seite 2",
+  );
+
   await page.setViewportSize({ width: 320, height: 740 });
   expect(
     await page.evaluate(
@@ -275,7 +291,7 @@ test("mobile import, daily lesson, persistence and all navigation", async ({
         name: "überschriften.txt",
         mimeType: "text/plain",
         buffer: Buffer.from(
-          "49 VII- HABEŞİSTAN’A HİCRET .\na) Habeşistan’a hicret edenler .\n" +
+          "49 VII- HABEŞİSTAN’A HİCRET .\na) Habeşistan’a hicret edenler .\n›) Hicretin birinci yılının önemli olayları .\n" +
             prose +
             "\n\nMETANET VE SABIR\nMetanet ile bekledi.",
         ),
@@ -293,6 +309,9 @@ test("mobile import, daily lesson, persistence and all navigation", async ({
   );
   await expect(hicretCard.locator(".example>blockquote")).not.toContainText(
     "edenler",
+  );
+  await expect(hicretCard.locator(".example>blockquote")).not.toContainText(
+    "olayları",
   );
   expect(browserErrors).toEqual([]);
 });

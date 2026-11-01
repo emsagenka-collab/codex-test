@@ -65,6 +65,17 @@ test("new and existing imports prefer verbatim prose with correct pages and pres
     assert.equal(JSON.stringify(exportData().daily), dailyBefore);
 
     for (const [fragment, context] of [
+      [
+        "›) Hicretin birinci yılının önemli olayları .",
+        "›) Hicretin birinci yılının önemli olayları .",
+      ],
+      [
+        "Hicretin birinci yılının önemli olayları.",
+        "Hicretin birinci yılının önemli olayları.",
+      ],
+      // Old sentence splitting already removed the numeric marker or other table cells.
+      ["Hicret etti.", "1. Hicret etti."],
+      ["Hicret etti.", "Hicret etti.\t622\tMedine"],
       ["a) Habeşistan’a hicret edenler.", "a) Habeşistan’a hicret edenler."],
       [
         "a) Habeşistan’a hicret ettiler.",

@@ -77,9 +77,11 @@ export async function POST(
         rate(Number(body.id), String(body.rating));
         break;
       }
-      case "settings":
-        saveSettings(await request.json());
+      case "settings": {
+        const { excludedPages, ...config } = await request.json();
+        saveSettings(config, excludedPages);
         break;
+      }
       case "demo":
         loadDemo();
         break;

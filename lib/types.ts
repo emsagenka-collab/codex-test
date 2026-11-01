@@ -62,6 +62,7 @@ export type State = {
     isDemo: number;
     sectionCount: number;
     matchedCount: number;
+    excludedPages: string;
   } | null;
   stats: { total: number; week: number; streak: number; studiedToday: number };
   settings: Settings;

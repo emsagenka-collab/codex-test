@@ -148,6 +148,7 @@ export function ImportForm({
 }
 export function SettingsForm({
   settings,
+  book,
   busy,
   onSave,
   onImport,
@@ -155,13 +156,15 @@ export function SettingsForm({
   aiAvailable,
 }: {
   settings: Settings;
+  book: State["book"];
   busy: boolean;
-  onSave: (s: Settings) => Promise<void>;
+  onSave: (s: Settings, excludedPages?: string) => Promise<void>;
   onImport: () => void;
   onReset: () => Promise<void>;
   aiAvailable: boolean;
 }) {
   const [draft, setDraft] = useState(settings);
+  const [excludedPages, setExcludedPages] = useState(book?.excludedPages || "");
   function update(key: keyof Settings, value: string) {
     setDraft((d) => ({ ...d, [key]: value }));
   }
@@ -169,7 +172,7 @@ export function SettingsForm({
     <form
       onSubmit={(e) => {
         e.preventDefault();
-        void onSave(draft);
+        void onSave(draft, book && !book.isDemo ? excludedPages : undefined);
       }}
       className="settings-form"
     >
@@ -197,6 +200,28 @@ export function SettingsForm({
         Tageswörter bleiben erhalten. Sind weniger neue Wörter verfügbar, zeigen
         wir dir die vorhandenen.
       </p>
+      {book && !book.isDemo && (
+        <>
+          <label className="setting-field">
+            PDF-Seiten ausschließen
+            <input
+              type="text"
+              value={excludedPages}
+              maxLength={2000}
+              placeholder="z. B. 1-8, 25"
+              aria-describedby="excluded-pages-help"
+              onChange={(e) => setExcludedPages(e.target.value)}
+            />
+          </label>
+          <p className="muted" id="excluded-pages-help">
+            Für „{book.title}“: Diese PDF-Seiten werden nicht für Beispielsätze
+            verwendet. Hier kannst du das gesamte Inhaltsverzeichnis oder
+            Tabellenseiten sperren. Es gilt die PDF-Seite, nicht die gedruckte
+            Buchseite. Leeren hebt die Sperre auf. Bei alten Importen ohne
+            Seitenangaben bitte das PDF erneut importieren.
+          </p>
+        </>
+      )}
       <label className="setting-field">
         Dein Türkisch-Niveau
         <select

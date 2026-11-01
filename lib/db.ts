@@ -1,4 +1,5 @@
-import { exampleSentences, isContentsText } from "./example-sentences";
+import { excludedPageNumbers, overlapsExcludedPages } from "./excluded-pages";
+import { exampleSentences } from "./example-sentences";
 import { DatabaseSync } from "node:sqlite";
 import { mkdirSync } from "node:fs";
 import path from "node:path";
@@ -40,7 +41,7 @@ export function db() {
   connection = new DatabaseSync(path.join(dir, "kelime.sqlite"));
   connection.exec(`PRAGMA journal_mode=WAL; PRAGMA foreign_keys=ON;
  CREATE TABLE IF NOT EXISTS User (id INTEGER PRIMARY KEY, settings TEXT NOT NULL);
- CREATE TABLE IF NOT EXISTS Book (id INTEGER PRIMARY KEY, title TEXT NOT NULL, importedAt TEXT NOT NULL, isDemo INTEGER NOT NULL DEFAULT 0);
+ CREATE TABLE IF NOT EXISTS Book (id INTEGER PRIMARY KEY, title TEXT NOT NULL, importedAt TEXT NOT NULL, isDemo INTEGER NOT NULL DEFAULT 0, excludedPages TEXT NOT NULL DEFAULT '');
  CREATE TABLE IF NOT EXISTS TextSection (id INTEGER PRIMARY KEY, bookId INTEGER REFERENCES Book(id), sectionNumber INTEGER, originalText TEXT NOT NULL);
  CREATE TABLE IF NOT EXISTS VocabularyWord (id INTEGER PRIMARY KEY, word TEXT NOT NULL, normalizedWord TEXT NOT NULL UNIQUE, data TEXT NOT NULL);
  CREATE TABLE IF NOT EXISTS WordOccurrence (id INTEGER PRIMARY KEY, wordId INTEGER REFERENCES VocabularyWord(id), sectionId INTEGER REFERENCES TextSection(id), sentence TEXT NOT NULL, surroundingText TEXT NOT NULL, translation TEXT NOT NULL DEFAULT '', context TEXT NOT NULL DEFAULT '', pageNumber INTEGER, pageEnd INTEGER);
@@ -48,6 +49,15 @@ export function db() {
  CREATE TABLE IF NOT EXISTS DailyWords (date TEXT PRIMARY KEY, word1 INTEGER REFERENCES VocabularyWord(id), word2 INTEGER REFERENCES VocabularyWord(id), wordIds TEXT NOT NULL DEFAULT '[]');
  CREATE TABLE IF NOT EXISTS Activity (day TEXT NOT NULL, wordId INTEGER REFERENCES VocabularyWord(id), UNIQUE(day,wordId));
  CREATE TABLE IF NOT EXISTS AppMeta (key TEXT PRIMARY KEY, value TEXT NOT NULL);`);
+  if (
+    !connection
+      .prepare("PRAGMA table_info(Book)")
+      .all()
+      .some((column) => column.name === "excludedPages")
+  )
+    connection.exec(
+      "ALTER TABLE Book ADD COLUMN excludedPages TEXT NOT NULL DEFAULT ''",
+    );
   const occurrenceColumns = connection
     .prepare("PRAGMA table_info(WordOccurrence)")
     .all();
@@ -108,7 +118,7 @@ export function settings(): Settings {
     ...JSON.parse(String(one("SELECT settings FROM User WHERE id=1").settings)),
   };
 }
-export function saveSettings(input: Partial<Settings>) {
+export function saveSettings(input: Partial<Settings>, excludedPages?: string) {
   const previous = settings();
   const merged = { ...previous, ...input };
   if (
@@ -127,9 +137,23 @@ export function saveSettings(input: Partial<Settings>) {
       "Bitte eine ganze Zahl zwischen 1 und 100 für die täglichen Wörter eingeben.",
     );
   dayKey(new Date(), merged.timezone);
-  db()
-    .prepare("UPDATE User SET settings=? WHERE id=1")
-    .run(JSON.stringify(merged));
+  if (excludedPages !== undefined) excludedPageNumbers(excludedPages);
+  db().exec("BEGIN IMMEDIATE");
+  try {
+    db()
+      .prepare("UPDATE User SET settings=? WHERE id=1")
+      .run(JSON.stringify(merged));
+    if (excludedPages !== undefined)
+      db()
+        .prepare(
+          "UPDATE Book SET excludedPages=? WHERE id=(SELECT CAST(value AS INTEGER) FROM AppMeta WHERE key='activeBook')",
+        )
+        .run(excludedPages.trim());
+    db().exec("COMMIT");
+  } catch (e) {
+    db().exec("ROLLBACK");
+    throw e;
+  }
 }
 export function importBook(
   title: string,
@@ -286,23 +310,44 @@ function vocabulary(): Word[] {
   const active = Number(
     one("SELECT value FROM AppMeta WHERE key='activeBook'")?.value || 0,
   );
+  const contextCache = new Map<string, Set<string>>();
+  const pageCache = new Map<number, Set<number>>();
   return all(
     `SELECT v.id,v.data,p.*,v.id AS vocabularyId FROM VocabularyWord v JOIN LearningProgress p ON p.wordId=v.id WHERE EXISTS (SELECT 1 FROM WordOccurrence WHERE wordId=v.id)`,
   ).map((row) => {
     const occurrences = all(
-      `SELECT o.*,s.sectionNumber,b.title,b.isDemo,b.id AS bookId FROM WordOccurrence o JOIN TextSection s ON s.id=o.sectionId JOIN Book b ON b.id=s.bookId WHERE o.wordId=? ORDER BY (b.id=?) DESC,(o.sentence=?) DESC,b.isDemo ASC,o.id ASC`,
+      `SELECT o.*,s.sectionNumber,b.title,b.isDemo,b.excludedPages,b.id AS bookId FROM WordOccurrence o JOIN TextSection s ON s.id=o.sectionId JOIN Book b ON b.id=s.bookId WHERE o.wordId=? ORDER BY (b.id=?) DESC,(o.sentence=?) DESC,b.isDemo ASC,o.id ASC`,
       Number(row.vocabularyId),
       active,
       JSON.parse(String(row.data)).demo,
     );
     const entry = JSON.parse(String(row.data)) as Entry;
     const candidates = occurrences.flatMap((occurrence) => {
-      if (isContentsText(String(occurrence.surroundingText))) return [];
+      const bookId = Number(occurrence.bookId);
+      if (!pageCache.has(bookId))
+        pageCache.set(
+          bookId,
+          excludedPageNumbers(String(occurrence.excludedPages || "")),
+        );
+      if (
+        overlapsExcludedPages(
+          pageCache.get(bookId)!,
+          occurrence.pageNumber,
+          occurrence.pageEnd,
+        )
+      )
+        return [];
+      const context = String(occurrence.surroundingText);
+      if (!contextCache.has(context))
+        contextCache.set(context, new Set(exampleSentences(context)));
+      const allowed = contextCache.get(context)!;
       const legacy =
         !occurrence.isDemo && legacyBook(Number(occurrence.bookId));
       return exampleSentences(String(occurrence.sentence))
-        .filter((sentence) =>
-          containsWord(repairTurkishText(sentence, legacy), entry.word),
+        .filter(
+          (sentence) =>
+            allowed.has(sentence) &&
+            containsWord(repairTurkishText(sentence, legacy), entry.word),
         )
         .map((sentence) => ({ occurrence, sentence }));
     });
@@ -459,6 +504,7 @@ export function state(): State {
             ).n,
           ),
           matchedCount: vocab.filter((w) => w.frequency > 0).length,
+          excludedPages: String(bookRow.excludedPages || ""),
         }
       : null,
     stats: {

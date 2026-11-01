@@ -55,18 +55,44 @@ test("capitalized prose, questions, commands and nominal sentences are not rewri
     assert.deepEqual(exampleSentences(sentence), [sentence]);
 });
 
-test("contents context excludes even grammatical entries, but ordinary numbered prose remains", () => {
+test("contents and all enumerated prose are excluded, including wrapped list continuations", () => {
   const index =
     "İÇİNDEKİLER\na) Habeşistan’a hicret ettiler.\nb) Medine’ye hicret etti.";
   assert.deepEqual(exampleSentences(index), []);
   const prose = "a) Habeşistan’a hicret ettiler.";
-  assert.deepEqual(exampleSentences(prose), [prose]);
+  assert.deepEqual(exampleSentences(prose), []);
   const wrapped =
     "a) Habeşistan’a hicret edenler\nyolda metanetlerini korudular.";
-  assert.deepEqual(exampleSentences(wrapped), [wrapped]);
+  assert.deepEqual(exampleSentences(wrapped), []);
   const mixed =
     "a) Habeşistan’a hicret edenler.\nb) Medine’ye hicret edenler.\nDaha sonra Habeşistan’a hicret etti.";
   assert.deepEqual(exampleSentences(mixed), [
     "Daha sonra Habeşistan’a hicret etti.",
+  ]);
+});
+
+test("only prose is admitted; arbitrary markers, headings and table cells cannot become examples", () => {
+  const forbidden = [
+    "›) Hicretin birinci yılının önemli olayları .",
+    "») Hicretin birinci yılının önemli olayları.",
+    ") Hicretin birinci yılının önemli olayları.",
+    "Hicretin birinci yılının önemli olayları.",
+    "a) Habeşistan’a hicret ettiler.",
+    "1. Habeşistan’a hicret ettiler.",
+    "II- Habeşistan’a hicret ettiler.",
+    "49 VII- Habeşistan’a hicret ettiler.",
+    "• Hicret etti.",
+    "→ Hicret etti.",
+    "Hicret etti.\t622\tMedine",
+    "Hicret etti.  622",
+    "| Hicret etti. | Medine |",
+    "Tablo 1: Hicret etti.",
+  ];
+  for (const text of forbidden)
+    assert.deepEqual(exampleSentences(text), [], text);
+  const table = "Olay\tYıl\nHicret etti.\t622\nMedine’ye ulaştı.";
+  assert.deepEqual(exampleSentences(table), []);
+  assert.deepEqual(exampleSentences(table + "\n\nDaha sonra hicret etti."), [
+    "Daha sonra hicret etti.",
   ]);
 });

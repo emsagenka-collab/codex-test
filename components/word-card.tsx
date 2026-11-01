@@ -7,7 +7,6 @@ import {
   RotateCcw,
   Bookmark,
   BookOpen,
-  Leaf,
   ChevronDown,
   FileText,
 } from "lucide-react";
@@ -95,19 +94,6 @@ export default function WordCard({
             vor. Das Wort bedeutet hier: {w.meaning}.
           </p>
         )}
-        {w.originalSentence && (
-          <details className="source-repair">
-            <summary>
-              PDF-Text berichtigt <ChevronDown size={14} />
-            </summary>
-            <p>
-              Ältere Schriftzeichen oder eindeutig erkannte Worttrennungen
-              wurden für die Anzeige berichtigt. Der Inhalt wurde nicht ergänzt.
-              Unveränderte Textextraktion:
-            </p>
-            <blockquote lang="tr">{w.originalSentence}</blockquote>
-          </details>
-        )}
         <div className="in-context">
           <span>IM SATZ</span>
           <p>
@@ -118,44 +104,6 @@ export default function WordCard({
         </div>
       </div>
       <div className="expand-sections">
-        <details>
-          <summary>
-            <span>
-              <Leaf size={16} /> Was passiert in diesem Abschnitt?
-            </span>
-            <ChevronDown size={16} />
-          </summary>
-          <div className="detail-content">
-            <p>
-              {!w.demoBook && w.contextExplanation && (
-                <span className="ai-label">KI-Kontextanalyse · </span>
-              )}
-              {w.contextExplanation ||
-                "Für diesen importierten Abschnitt liegt noch keine deutsche Kontextanalyse vor. Lies den Originalabschnitt unten. Ohne weitere Belege ergänzt die App keine historischen Personen, Daten oder Ereignisse."}
-            </p>
-            <details>
-              <summary>
-                Originalabschnitt lesen <ChevronDown size={14} />
-              </summary>
-              <p lang="tr">{w.section}</p>
-              {w.originalSection && (
-                <details className="source-repair">
-                  <summary>
-                    Unveränderte Textextraktion anzeigen{" "}
-                    <ChevronDown size={14} />
-                  </summary>
-                  <p lang="tr">{w.originalSection}</p>
-                </details>
-              )}
-            </details>
-            <small>
-              {w.source} · Abschnitt {w.sectionNumber}
-              {w.demoBook
-                ? " · Eigenständig verfasster Lerntext, kein Buchzitat"
-                : ""}
-            </small>
-          </div>
-        </details>
         <details>
           <summary>
             <span>

@@ -43,14 +43,10 @@ test("mobile import, daily lesson, persistence and all navigation", async ({
       () => document.documentElement.scrollWidth <= window.innerWidth,
     ),
   ).toBe(true);
-  await page
-    .locator("article")
-    .first()
-    .getByText("Was passiert in diesem Abschnitt?", { exact: true })
-    .click();
   await expect(
-    page.locator("article").first().getByText("Originalabschnitt lesen"),
-  ).toBeVisible();
+    page.getByText("Was passiert in diesem Abschnitt?", { exact: true }),
+  ).toHaveCount(0);
+  await expect(page.getByText("Wortwissen & Herkunft")).toHaveCount(2);
   await page.screenshot({ path: "/tmp/kelime-mobile.png", fullPage: true });
   await page.setViewportSize({ width: 320, height: 740 });
   expect(
@@ -129,18 +125,16 @@ test("mobile import, daily lesson, persistence and all navigation", async ({
   });
   const legacyState = await legacy.json();
   expect(legacyState.ok).toBe(true);
+  expect(
+    legacyState.state.daily.find((w: { word: string }) => w.word === "emanet")
+      .originalSentence,
+  ).toContain("do€ru");
   await page.reload();
   await expect(
     page.locator("article").first().locator(".example>blockquote"),
   ).toContainText("doğru korumayı ve komşularla paylaşmayı öğrendi");
-  await page
-    .locator("article")
-    .first()
-    .getByText("PDF-Text berichtigt")
-    .click();
-  await expect(
-    page.locator("article").first().locator(".source-repair blockquote"),
-  ).toContainText("do€ru");
+  await expect(page.getByText("PDF-Text berichtigt")).toHaveCount(0);
+  await expect(page.locator(".source-repair")).toHaveCount(0);
   await page.setViewportSize({ width: 390, height: 844 });
   await expect(page.getByText("Ersteller:")).toBeVisible();
   const spellingSource =
@@ -195,14 +189,8 @@ test("mobile import, daily lesson, persistence and all navigation", async ({
   await expect(
     page.locator("article").first().locator(".example>blockquote"),
   ).toContainText("Peygamberimiz’in");
-  await page
-    .locator("article")
-    .first()
-    .getByText("PDF-Text berichtigt")
-    .click();
-  await expect(
-    page.locator("article").first().locator(".source-repair blockquote"),
-  ).toContainText("Peygambe rimiz’in");
+  await expect(page.getByText("PDF-Text berichtigt")).toHaveCount(0);
+  await expect(page.locator(".source-repair")).toHaveCount(0);
   await expect(page.locator(".orthography-panel")).toHaveCount(0);
   expect(
     (

@@ -94,15 +94,10 @@ export default function WordCard({
         <blockquote lang="tr">
           „<Highlight text={w.sentence} word={w.word} />“
         </blockquote>
-        {w.sentenceTranslation ? (
+        {w.sentenceTranslation && (
           <p className="sentence-translation">
             {!w.demoBook && <span className="ai-label">KI-Übersetzung · </span>}
             {w.sentenceTranslation}
-          </p>
-        ) : (
-          <p className="sentence-translation untranslated">
-            Für diesen Originalsatz liegt keine geprüfte deutsche Übersetzung
-            vor. Das Wort bedeutet hier: {w.meaning}.
           </p>
         )}
         <div className="in-context">

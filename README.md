@@ -46,14 +46,16 @@ Beleg vorhanden, zeigt die Karte einen Hinweis statt eines solchen Ausschnitts.
 Die automatische Erkennung bleibt von den im PDF extrahierbaren Layoutmerkmalen
 abhängig und ist keine vollständige Grammatikanalyse.
 
-Unter **Einstellungen → PDF-Seiten ausschließen** können zusätzlich ganze
-Seitenbereiche des aktiven Buches gesperrt werden, etwa `6-8, 25`.
-Das gilt sofort für Beispielsätze und neue Tageswörter, bleibt gespeichert und
-betrifft nur dieses Buch. Maßgeblich ist die PDF-Seite. Ein Satz, dessen
-Seitenbereich eine gesperrte Seite berührt, wird ebenfalls ausgeschlossen.
-Bei alten Quellen ohne Seitenzuordnung sind Ausschnitte bei aktiver Sperre
-vorsorglich ausgeschlossen; ein erneuter PDF-Import erfasst die Seiten.
-Leeren des Feldes hebt die Sperre auf; Bewertungen werden nicht gelöscht.
+Pro Wort stehen bis zu 30 unterschiedliche, belegte Beispielsätze aus demselben
+Quellbuch bereit. Mit den kleinen Pfeilen rechts oben in der Beispielbox wechselt
+der Satz mit einem gerichteten Schiebeübergang; Abschnitt und PDF-Seite wechseln
+passend mit. Identische Sätze erscheinen nur einmal. Bei nur einem verfügbaren
+Beispiel sind die Pfeile deaktiviert. Links-/Rechts-Pfeiltasten werden in der
+fokussierten Beispielbox unterstützt, reduzierte Bewegungseinstellungen beachtet.
+Blättern verändert weder Bewertungen noch Wiederholungsplanung.
+
+Die bisherige Einstellung zum Ausschließen von PDF-Seiten ist entfernt.
+Gespeicherte Seitensperren älterer Versionen werden nicht mehr angewendet.
 
 ## PDF-Seitenangaben
 

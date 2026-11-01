@@ -533,11 +533,138 @@ main {
   gap: 3px 9px;
   text-align: right;
 }
-.example-label > span {
+.example-label .source-location {
   font-size: 8px;
   letter-spacing: 0;
   margin-left: auto;
   color: #a5a594;
+}
+.example:focus-visible {
+  outline: 2px solid var(--green);
+  outline-offset: 3px;
+}
+.example-label {
+  flex-wrap: wrap;
+}
+.example-origin {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.example-origin svg {
+  flex-shrink: 0;
+}
+.example-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  margin-left: auto;
+}
+.example-pager {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  flex-shrink: 0;
+  letter-spacing: 0;
+}
+.example-count {
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+  margin-right: 5px;
+  color: var(--muted);
+}
+.example-arrow {
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  color: var(--green);
+  background: var(--paper);
+  transition:
+    background 160ms ease,
+    border-color 160ms ease;
+}
+.example-arrow:hover:not(:disabled) {
+  background: var(--green-soft);
+  border-color: var(--green);
+}
+.example-arrow:focus-visible {
+  outline: 2px solid var(--green);
+  outline-offset: 2px;
+}
+.example-arrow:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+.example-viewport {
+  position: relative;
+  overflow: hidden;
+  transition: height 340ms cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+.example-slide {
+  display: flow-root;
+  width: 100%;
+}
+.example-outgoing {
+  position: absolute;
+  inset: 0 0 auto;
+  pointer-events: none;
+}
+.example-moving-next .example-current {
+  animation: example-in-next 340ms cubic-bezier(0.22, 0.61, 0.36, 1) both;
+}
+.example-moving-next .example-outgoing {
+  animation: example-out-next 340ms cubic-bezier(0.22, 0.61, 0.36, 1) both;
+}
+.example-moving-previous .example-current {
+  animation: example-in-previous 340ms cubic-bezier(0.22, 0.61, 0.36, 1) both;
+}
+.example-moving-previous .example-outgoing {
+  animation: example-out-previous 340ms cubic-bezier(0.22, 0.61, 0.36, 1) both;
+}
+@keyframes example-in-next {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+@keyframes example-out-next {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+}
+@keyframes example-in-previous {
+  from {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+@keyframes example-out-previous {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(100%);
+    opacity: 0;
+  }
 }
 blockquote {
   margin: 16px 0 10px;

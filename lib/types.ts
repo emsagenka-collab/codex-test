@@ -19,7 +19,18 @@ export type ExtractedDocument = {
   text: string;
   pages: SourcePage[];
 };
+export type WordExample = {
+  id: string;
+  sentence: string;
+  sectionNumber: number;
+  pageNumber: number | null;
+  pageEnd: number | null;
+  source: string;
+  demoBook: boolean;
+  sentenceTranslation: string;
+};
 export type Word = Entry & {
+  examples: WordExample[];
   id: number;
   sentence: string;
   orthography: OrthographyResult;
@@ -62,7 +73,6 @@ export type State = {
     isDemo: number;
     sectionCount: number;
     matchedCount: number;
-    excludedPages: string;
   } | null;
   stats: { total: number; week: number; streak: number; studiedToday: number };
   settings: Settings;

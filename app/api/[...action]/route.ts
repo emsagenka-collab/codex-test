@@ -79,7 +79,9 @@ export async function POST(
       }
       case "settings": {
         const { excludedPages, ...config } = await request.json();
-        saveSettings(config, excludedPages);
+        // Ignore the retired page-exclusion setting from older clients.
+        void excludedPages;
+        saveSettings(config);
         break;
       }
       case "demo":

@@ -882,19 +882,13 @@ export default function LearningApp() {
             data && (
               <SettingsForm
                 settings={data.settings}
-                book={data.book}
                 busy={busy}
                 aiAvailable={data.aiAvailable}
-                onSave={async (s, excludedPages) => {
+                onSave={async (s) => {
                   if (
                     await act(
                       "settings",
-                      {
-                        ...s,
-                        ...(excludedPages !== undefined
-                          ? { excludedPages }
-                          : {}),
-                      },
+                      s,
                       "Deine Einstellungen sind gespeichert.",
                     )
                   )

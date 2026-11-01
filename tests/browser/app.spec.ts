@@ -164,7 +164,7 @@ test("mobile import, daily lesson, persistence and all navigation", async ({
   ).toContain("do€ru");
   await page.reload();
   await expect(
-    page.locator("article").first().locator(".example>blockquote"),
+    page.locator("article").first().locator(".example-current>blockquote"),
   ).toContainText("doğru korumayı ve komşularla paylaşmayı öğrendi");
   await expect(page.getByText("PDF-Text berichtigt")).toHaveCount(0);
   await expect(page.locator(".source-repair")).toHaveCount(0);
@@ -188,7 +188,7 @@ test("mobile import, daily lesson, persistence and all navigation", async ({
   await expect(
     page.getByText("Türkische Schreibprüfung", { exact: false }),
   ).toHaveCount(0);
-  await expect(firstCard.locator(".example>blockquote")).toContainText(
+  await expect(firstCard.locator(".example-current>blockquote")).toContainText(
     "herşey",
   );
   const background = await (await request.get("/api/state")).json();
@@ -220,7 +220,7 @@ test("mobile import, daily lesson, persistence and all navigation", async ({
   ).toContain("Tefekkür");
   await page.reload();
   await expect(
-    page.locator("article").first().locator(".example>blockquote"),
+    page.locator("article").first().locator(".example-current>blockquote"),
   ).toContainText("Peygamberimiz’in");
   await expect(page.getByText("PDF-Text berichtigt")).toHaveCount(0);
   await expect(page.locator(".source-repair")).toHaveCount(0);
@@ -262,21 +262,10 @@ test("mobile import, daily lesson, persistence and all navigation", async ({
     "PDF-Seite 2",
   );
   await page.getByRole("button", { name: "Einstellungen öffnen" }).click();
-  await page.getByLabel("PDF-Seiten ausschließen", { exact: true }).fill("2");
-  await page.getByRole("button", { name: "Einstellungen speichern" }).click();
-  await expect(emanetCard.locator(".example")).toHaveCount(0);
-  await page.reload();
-  await expect(emanetCard.locator(".example")).toHaveCount(0);
-  await page.getByRole("button", { name: "Einstellungen öffnen" }).click();
   await expect(
     page.getByLabel("PDF-Seiten ausschließen", { exact: true }),
-  ).toHaveValue("2");
-  await page.getByLabel("PDF-Seiten ausschließen", { exact: true }).fill("");
-  await page.getByRole("button", { name: "Einstellungen speichern" }).click();
-  await expect(emanetCard.locator(".source-location")).toContainText(
-    "PDF-Seite 2",
-  );
-
+  ).toHaveCount(0);
+  await page.getByRole("button", { name: "Dialog schließen" }).click();
   await page.setViewportSize({ width: 320, height: 740 });
   expect(
     await page.evaluate(
@@ -303,15 +292,96 @@ test("mobile import, daily lesson, persistence and all navigation", async ({
   const hicretCard = page.locator("article.word-card").filter({
     has: page.getByRole("heading", { name: "hicret", exact: true }),
   });
-  await expect(hicretCard.locator(".example>blockquote")).toContainText(prose);
-  await expect(hicretCard.locator(".example>blockquote")).not.toContainText(
-    "VII-",
+  await expect(hicretCard.locator(".example-current>blockquote")).toContainText(
+    prose,
   );
-  await expect(hicretCard.locator(".example>blockquote")).not.toContainText(
-    "edenler",
-  );
-  await expect(hicretCard.locator(".example>blockquote")).not.toContainText(
-    "olayları",
-  );
+  await expect(
+    hicretCard.locator(".example-current>blockquote"),
+  ).not.toContainText("VII-");
+  await expect(
+    hicretCard.locator(".example-current>blockquote"),
+  ).not.toContainText("edenler");
+  await expect(
+    hicretCard.locator(".example-current>blockquote"),
+  ).not.toContainText("olayları");
   expect(browserErrors).toEqual([]);
+});
+
+test("sentence carousel changes examples and PDF pages, keeps ratings and supports reduced motion", async ({
+  page,
+  request,
+}) => {
+  await request.post("/api/reset", { data: { confirm: "DELETE" } });
+  await request.post("/api/settings", { data: { dailyWordCount: 1 } });
+  const imported = await request.post("/api/import", {
+    multipart: {
+      file: {
+        name: "beispiele.pdf",
+        mimeType: "application/pdf",
+        buffer: readFileSync("tests/fixtures/examples.pdf"),
+      },
+    },
+  });
+  expect(await imported.json()).toHaveProperty("ok", true);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/");
+  const card = page.locator("article.word-card").first();
+  const region = card.getByRole("region", { name: "Beispielsätze für emanet" });
+  const next = card.getByRole("button", { name: "Nächster Beispielsatz" });
+  const previous = card.getByRole("button", {
+    name: "Vorheriger Beispielsatz",
+  });
+  await expect(card.locator(".example-count")).toHaveText("1 / 3");
+  await expect(previous).toBeDisabled();
+  await expect(card.locator(".example-current>blockquote")).toContainText(
+    "Emaneti iyi korudu.",
+  );
+  await expect(card.locator(".source-location")).toContainText("PDF-Seite 1");
+  await next.click();
+  await expect(card.locator(".example-count")).toHaveText("2 / 3");
+  await expect(card.locator(".example-current>blockquote")).toContainText(
+    "Emaneti sahibine teslim etmeden evvel bir kez daha kontrol etti.",
+  );
+  await expect(card.locator(".source-location")).toContainText("PDF-Seite 2");
+  await expect(previous).toBeEnabled();
+  await expect(card.locator(".example-outgoing")).toHaveCount(0);
+  await card.getByRole("button", { name: "Verstanden", exact: true }).click();
+  await expect(card.getByText(/Gespeichert · nächste/)).toBeVisible();
+  await expect(card.locator(".example-count")).toHaveText("2 / 3");
+  await previous.click();
+  await expect(card.locator(".example-count")).toHaveText("1 / 3");
+  await expect(card.locator(".source-location")).toContainText("PDF-Seite 1");
+  await expect(next).toBeEnabled();
+  await page.setViewportSize({ width: 320, height: 740 });
+  await next.click();
+  await expect(previous).toBeEnabled();
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= window.innerWidth,
+    ),
+  ).toBe(true);
+  await page.screenshot({
+    path: "/tmp/kelime-carousel-mobile.png",
+    fullPage: true,
+  });
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await region.focus();
+  await region.press("ArrowRight");
+  await expect(card.locator(".example-count")).toHaveText("3 / 3");
+  await expect(next).toBeDisabled();
+  await expect(card.locator(".example-current>blockquote")).toContainText(
+    "Emaneti korudu ve sahibine teslim etti.",
+  );
+  await expect(card.locator(".source-location")).toContainText("PDF-Seite 3");
+  await expect(card.locator(".example-outgoing")).toHaveCount(0);
+  await region.press("ArrowLeft");
+  await expect(card.locator(".example-count")).toHaveText("2 / 3");
+  const state = await (await request.get("/api/state")).json();
+  expect(state.daily[0].reviewCount).toBe(1);
+  expect(state.daily[0].examples).toHaveLength(3);
+  await page.setViewportSize({ width: 1440, height: 1050 });
+  await page.screenshot({
+    path: "/tmp/kelime-carousel-desktop.png",
+    fullPage: true,
+  });
 });

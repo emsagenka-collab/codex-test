@@ -15,3 +15,5 @@ Use current standard Turkish orthography as specified by Türk Dil Kurumu (TDK) 
 The local rule checker covers selected explicit spellings; do not describe it as a complete grammar checker or claim that its bundled rules automatically update from TDK. Live dictionary lookups are explicit, use the official sozluk.gov.tr destination, and must distinguish confirmed responses, missing entries and unavailable service. A missing entry does not prove an error. Never claim an online confirmation without a successful response.
 
 The visible attribution is exactly: “Ersteller: Ömer Faruk Takkaç”.
+
+Keep the spelling check server-side in the background (`Word.orthography` / `Word.wordOrthography`). Do not reintroduce a separate visible spelling-check panel in learning or review cards; the user explicitly requested its removal. PDF word-break repair must use known whole word forms, preserve raw source and apostrophes, and never join arbitrary neighboring words or cross paragraph boundaries.

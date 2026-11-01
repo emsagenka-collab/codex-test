@@ -239,10 +239,8 @@ export function SettingsForm({
         </select>
       </label>
       <p className="muted">
-        Schreibstandard: Türkisch, nach ausgewählten TDK-Regeln. Hinweise
-        erscheinen automatisch in den Lernkarten. Die aktuelle
-        Wörterbuchschreibung kannst du dort zusätzlich abfragen. Originalzitate
-        bleiben erhalten.
+        Schreibstandard: Türkisch, nach ausgewählten TDK-Regeln. Die lokale
+        Prüfung läuft im Hintergrund. Originalzitate bleiben erhalten.
       </p>
       <p className="muted">
         Niveauänderungen gelten für die nächste Tagesauswahl. Bereits bekannte

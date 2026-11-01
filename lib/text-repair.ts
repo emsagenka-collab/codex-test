@@ -1,3 +1,4 @@
+import { repairPdfWordBreaks } from "./pdf-word-breaks";
 /** Older Turkish PDFs sometimes expose font character codes instead of Unicode.
  * Repairs are deterministic display/analysis transforms. Raw source stays intact.
  * Never infer missing words, punctuation, or historical content.
@@ -7,7 +8,7 @@ export function hasLegacyTurkishGlyphs(text: string): boolean {
     text,
   );
 }
-export function repairTurkishText(
+function repairLegacyGlyphs(
   text: string,
   legacy = hasLegacyTurkishGlyphs(text),
 ): string {
@@ -66,4 +67,12 @@ export function repairTurkishText(
     }
     return repaired.replace(/^fi(?=erh|ehir|imdi|efkat)/u, "Ş");
   });
+}
+
+/** Reversible display/analysis repair; callers continue storing the raw source. */
+export function repairTurkishText(
+  text: string,
+  legacy = hasLegacyTurkishGlyphs(text),
+): string {
+  return repairPdfWordBreaks(repairLegacyGlyphs(text, legacy)).text;
 }

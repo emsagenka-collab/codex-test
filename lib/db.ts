@@ -13,6 +13,7 @@ import {
   tokens,
   matches,
 } from "./learning";
+import { checkTurkishOrthography } from "./orthography";
 import { hasLegacyTurkishGlyphs, repairTurkishText } from "./text-repair";
 import type { Entry, Settings, State, Word } from "./types";
 let connection: DatabaseSync;
@@ -219,6 +220,10 @@ function vocabulary(): Word[] {
       id: Number(row.vocabularyId),
       sentence,
       section,
+      orthography: checkTurkishOrthography(sentence),
+      wordOrthography: checkTurkishOrthography(
+        JSON.parse(String(row.data)).word,
+      ),
       originalSentence:
         sentence !== String(o.sentence) ? String(o.sentence) : null,
       originalSection:

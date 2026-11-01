@@ -96,6 +96,31 @@ test("source provenance, stable daily selection, real imports, and persisted rat
       state().vocabulary.find((w) => w.word === "emanet")!.sentence,
       /doğru/,
     );
+    const progressSnapshot = JSON.stringify(exportData().progress);
+    const dailySnapshot = JSON.stringify(exportData().daily);
+    const splitRaw =
+      "Peygambe rimiz’in emaneti koruduğunu dinliyordu.\n\nTefek-\nkür ederken herşey hazırdı.";
+    const splitBook = importBook("Getrennte PDF-Wörter", splitRaw);
+    const joined = state();
+    const splitWord = joined.vocabulary.find((w) => w.word === "emanet")!;
+    assert.match(splitWord.sentence, /Peygamberimiz’in/);
+    assert.match(splitWord.originalSentence!, /Peygambe rimiz’in/);
+    const reflection = joined.vocabulary.find((w) => w.word === "tefekkür")!;
+    assert.match(reflection.sentence, /Tefekkür/);
+    assert.equal(
+      reflection.orthography.suggestion,
+      "Tefekkür ederken her şey hazırdı.",
+    );
+    assert.equal(reflection.sentence, "Tefekkür ederken herşey hazırdı.");
+    assert.equal(JSON.stringify(exportData().progress), progressSnapshot);
+    assert.equal(JSON.stringify(exportData().daily), dailySnapshot);
+    assert.equal(
+      exportData()
+        .sections.filter((s) => s.bookId === splitBook.bookId)
+        .map((s) => s.originalText)
+        .join("\n\n"),
+      splitRaw,
+    );
   } finally {
     db().close();
     rmSync(dir, { recursive: true, force: true });

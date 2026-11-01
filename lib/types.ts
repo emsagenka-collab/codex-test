@@ -1,3 +1,4 @@
+import type { OrthographyResult } from "./orthography";
 export type Entry = {
   word: string;
   meaning: string;
@@ -13,6 +14,8 @@ export type Entry = {
 export type Word = Entry & {
   id: number;
   sentence: string;
+  orthography: OrthographyResult;
+  wordOrthography: OrthographyResult;
   originalSentence: string | null;
   originalSection: string | null;
   section: string;

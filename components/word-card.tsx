@@ -13,7 +13,6 @@ import {
 } from "lucide-react";
 import type { Word } from "@/lib/types";
 import { Highlight, formatDate, difficulty } from "./shared";
-import OrthographyPanel from "./orthography-panel";
 export default function WordCard({
   word: w,
   index,
@@ -99,12 +98,12 @@ export default function WordCard({
         {w.originalSentence && (
           <details className="source-repair">
             <summary>
-              PDF-Schriftzeichen berichtigt <ChevronDown size={14} />
+              PDF-Text berichtigt <ChevronDown size={14} />
             </summary>
             <p>
-              Die Zeichen ğ, ı und ş wurden aus einer älteren Schriftkodierung
-              wiederhergestellt. Der Inhalt wurde nicht ergänzt. Unveränderte
-              Textextraktion:
+              Ältere Schriftzeichen oder eindeutig erkannte Worttrennungen
+              wurden für die Anzeige berichtigt. Der Inhalt wurde nicht ergänzt.
+              Unveränderte Textextraktion:
             </p>
             <blockquote lang="tr">{w.originalSentence}</blockquote>
           </details>
@@ -118,7 +117,6 @@ export default function WordCard({
           </p>
         </div>
       </div>
-      <OrthographyPanel sentence={w.sentence} word={w.word} />
       <div className="expand-sections">
         <details>
           <summary>

@@ -26,7 +26,6 @@ import {
   FileText,
   LoaderCircle,
 } from "lucide-react";
-import OrthographyPanel from "./orthography-panel";
 import WordCard from "./word-card";
 import Modal from "./modal";
 import { ImportForm, SettingsForm } from "./forms";
@@ -515,11 +514,6 @@ export default function LearningApp() {
                               word={reviewWord.word}
                             />
                           </blockquote>
-                          <OrthographyPanel
-                            key={reviewWord.id}
-                            word={reviewWord.word}
-                            sentence={reviewWord.sentence}
-                          />
                           {reviewWord.sentenceTranslation ? (
                             <p>{reviewWord.sentenceTranslation}</p>
                           ) : (

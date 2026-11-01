@@ -136,7 +136,7 @@ test("mobile import, daily lesson, persistence and all navigation", async ({
   await page
     .locator("article")
     .first()
-    .getByText("PDF-Schriftzeichen berichtigt")
+    .getByText("PDF-Text berichtigt")
     .click();
   await expect(
     page.locator("article").first().locator(".source-repair blockquote"),
@@ -157,33 +157,53 @@ test("mobile import, daily lesson, persistence and all navigation", async ({
   expect((await spellingImport.json()).ok).toBe(true);
   await page.reload();
   const firstCard = page.locator("article").first();
-  await firstCard.getByText(/Türkische Schreibprüfung/).click();
+  await expect(page.locator(".orthography-panel")).toHaveCount(0);
+  await expect(
+    page.getByText("Türkische Schreibprüfung", { exact: false }),
+  ).toHaveCount(0);
   await expect(firstCard.locator(".example>blockquote")).toContainText(
     "herşey",
   );
-  await expect(
-    firstCard.locator(".orthography-content>blockquote"),
-  ).toContainText("her şey");
-  await page.route("**/api/tdk?*", (route) =>
-    route.fulfill({
-      json: {
-        status: "listed",
-        word: "emanet",
-        spellings: ["emanet"],
-        checkedAt: new Date().toISOString(),
-        source: "https://sozluk.gov.tr/",
-        message: "Aktuelle Schreibform im TDK-Wörterbuch abgerufen.",
+  const background = await (await request.get("/api/state")).json();
+  const checked = background.daily.find(
+    (w: { word: string }) => w.word === "emanet",
+  );
+  expect(checked.orthography.suggestion).toContain("her şey");
+  expect(checked.orthography.issues.length).toBeGreaterThan(0);
+  const splitSource =
+    "Peygambe rimiz’in emaneti koruduğunu dinliyordu.\n\nTefek-\nkür ederken herşey hazırdı.";
+  const joinedImport = await request.post("/api/import", {
+    multipart: {
+      file: {
+        name: "worttrennungen.txt",
+        mimeType: "text/plain",
+        buffer: Buffer.from(splitSource),
       },
-    }),
-  );
-  await firstCard
-    .getByRole("button", { name: "Aktuelle TDK-Schreibform abfragen" })
+    },
+  });
+  const joinedState = await joinedImport.json();
+  expect(joinedState.ok).toBe(true);
+  expect(
+    joinedState.state.daily.find((w: { word: string }) => w.word === "emanet")
+      .sentence,
+  ).toContain("Peygamberimiz’in");
+  expect(
+    joinedState.state.daily.find((w: { word: string }) => w.word === "tefekkür")
+      .sentence,
+  ).toContain("Tefekkür");
+  await page.reload();
+  await expect(
+    page.locator("article").first().locator(".example>blockquote"),
+  ).toContainText("Peygamberimiz’in");
+  await page
+    .locator("article")
+    .first()
+    .getByText("PDF-Text berichtigt")
     .click();
-  await expect(firstCard.locator(".tdk-result")).toContainText(
-    "Aktuelle Schreibform",
-  );
-  await expect(firstCard.locator(".tdk-result strong")).toHaveText("emanet");
-  await page.unroute("**/api/tdk?*");
+  await expect(
+    page.locator("article").first().locator(".source-repair blockquote"),
+  ).toContainText("Peygambe rimiz’in");
+  await expect(page.locator(".orthography-panel")).toHaveCount(0);
   expect(
     (
       await request.get(

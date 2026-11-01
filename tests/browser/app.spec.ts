@@ -115,9 +115,7 @@ test("mobile import, daily lesson, persistence and all navigation", async ({
   await page.getByRole("button", { name: /Text analysieren &/ }).click();
   await expect(page.getByText("Deine Quelle:")).toBeVisible();
   await expect(page.locator(".source-footer")).toContainText("mein-buch");
-  await expect(page.getByText("Hersteller:")).toContainText(
-    "Ömer Faruk Takkaç",
-  );
+  await expect(page.getByText("Ersteller:")).toContainText("Ömer Faruk Takkaç");
   const rawText =
     "Emaneti do€ru korumay› ve komflularla paylaflmay› ö€rendi.\n\nTefekkür ederken haklar›n› düflündü.";
   const legacy = await request.post("/api/import", {
@@ -144,7 +142,55 @@ test("mobile import, daily lesson, persistence and all navigation", async ({
     page.locator("article").first().locator(".source-repair blockquote"),
   ).toContainText("do€ru");
   await page.setViewportSize({ width: 390, height: 844 });
-  await expect(page.getByText("Hersteller:")).toBeVisible();
+  await expect(page.getByText("Ersteller:")).toBeVisible();
+  const spellingSource =
+    "Emaneti korumak için herşey hazırdı.\n\nTefekkür ederken bir kaç kişi bekledi.";
+  const spellingImport = await request.post("/api/import", {
+    multipart: {
+      file: {
+        name: "schreibung.txt",
+        mimeType: "text/plain",
+        buffer: Buffer.from(spellingSource),
+      },
+    },
+  });
+  expect((await spellingImport.json()).ok).toBe(true);
+  await page.reload();
+  const firstCard = page.locator("article").first();
+  await firstCard.getByText(/Türkische Schreibprüfung/).click();
+  await expect(firstCard.locator(".example>blockquote")).toContainText(
+    "herşey",
+  );
+  await expect(
+    firstCard.locator(".orthography-content>blockquote"),
+  ).toContainText("her şey");
+  await page.route("**/api/tdk?*", (route) =>
+    route.fulfill({
+      json: {
+        status: "listed",
+        word: "emanet",
+        spellings: ["emanet"],
+        checkedAt: new Date().toISOString(),
+        source: "https://sozluk.gov.tr/",
+        message: "Aktuelle Schreibform im TDK-Wörterbuch abgerufen.",
+      },
+    }),
+  );
+  await firstCard
+    .getByRole("button", { name: "Aktuelle TDK-Schreibform abfragen" })
+    .click();
+  await expect(firstCard.locator(".tdk-result")).toContainText(
+    "Aktuelle Schreibform",
+  );
+  await expect(firstCard.locator(".tdk-result strong")).toHaveText("emanet");
+  await page.unroute("**/api/tdk?*");
+  expect(
+    (
+      await request.get(
+        "/api/tdk?word=" + encodeURIComponent("https://example.com"),
+      )
+    ).status(),
+  ).toBe(400);
   const pdf = await request.post("/api/import", {
     multipart: {
       file: {

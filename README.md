@@ -83,7 +83,7 @@ Chromium wird unter `/usr/bin/chromium` erwartet. Alternativ `PLAYWRIGHT_CHROMIU
 
 ## Türkische PDF-Schriften und Windows-Updates
 
-Hersteller: **Ömer Faruk Takkaç**.
+Ersteller: **Ömer Faruk Takkaç**.
 
 Ältere türkische PDFs können Schriftcodes wie `do€ru`, `haklar›n›` und `komﬂularla` enthalten. Die App erkennt charakteristische Muster und stellt die entsprechenden türkischen Zeichen für Anzeige und Worterkennung wieder her. Auch die von früheren PDF.js-Versionen zu ASCII `fl`/`fi` normalisierten Ligaturen werden anhand einer begrenzten Liste türkischer Wortstämme berücksichtigt. Korrekt kodierter Text, Währungsangaben und normale `fl`-Verbindungen werden nicht pauschal ersetzt. Dies ist keine allgemeine OCR- oder Rechtschreibkorrektur.
 
@@ -92,3 +92,13 @@ Die unveränderte Extraktion bleibt in SQLite gespeichert und ist bei berichtigt
 `scripts/update-windows.ps1 -Revision <Commit-SHA>` aktualisiert die vorhandene portable Windows-Installation. Zuerst das Kelime-Startfenster schließen. Der Updater prüft den Download und installiert Pakete in einem separaten Ordner, sichert die bisherige App und den Datenordner unter `%LOCALAPPDATA%\Kelime\backups`, bewahrt lokale `.env`-Dateien und lässt externe Lerndaten an ihrem Ort. Scheitert der Ordneraustausch, wird die bisherige App zurückverschoben. Die Desktopverknüpfung bleibt gültig.
 
 Zusätzliche PowerShell-Prüfung: `pwsh -NoProfile -File tests/windows-update.ps1` verwendet isolierte temporäre Dateien und simulierte Windows-/Downloadfunktionen für Erfolg, Installationsfehler, laufende App und Rollback. Sie ersetzt keinen Test auf einem echten Windows-Laptop.
+
+## TDK-orientierte Schreibprüfung
+
+Die Lernkarten und aufgedeckten Wiederholungskarten führen automatisch eine lokale Regelprüfung aus (`lib/orthography.ts`). Sie erkennt ausgewählte eindeutige Getrennt-/Zusammenschreibungen wie `herşey → her şey`, `bir kaç → birkaç`, `pekçok → pek çok` sowie eine begrenzte Liste häufiger Wortfehler. Türkische Großschreibung wird berücksichtigt. Hinweise enthalten die betroffene Textstelle, eine Erklärung und einen Link zur offiziellen TDK-Grundlage. Die vorgeschlagene heutige Schreibung wird **zusätzlich** angezeigt; Buchzitate, historische Formen und gespeicherte Originaltexte bleiben unverändert. Für neue KI-Erklärungen gilt ebenfalls die Vorgabe der TDK-Standardschreibung, ohne Originalzitate umzuschreiben.
+
+**Grenzen:** Dies ist kein vollständiges türkisches Rechtschreibwörterbuch und keine vollständige Grammatikprüfung. Die lokale Regelliste (Version 1.0) aktualisiert sich nicht selbst und besitzt keine behauptete tägliche TDK-Verifikation. Kontextabhängige Regeln für `de/da`, `ki`, Fragepartikeln, Eigennamen oder historische Schreibungen werden nicht pauschal ersetzt. „Keine Auffälligkeit“ bedeutet nur, dass die unterstützten Regeln keinen Treffer hatten.
+
+Mit „Aktuelle TDK-Schreibform abfragen“ lässt sich ergänzend eine aktuelle Abfrage des offiziellen Wörterbuchs auslösen (`GET /api/tdk?word=...`, serverseitig `https://sozluk.gov.tr/gts?ara=...`). Dabei wird nur das einzelne Wort übermittelt. Rückgaben werden auf ihre Struktur geprüft und höchstens 24 Stunden gespeichert. Nicht gefunden, nicht erreichbar und tatsächlich abgerufene Schreibformen sind unterschiedliche Ergebnisse; Fehler werden niemals als erfolgreiche Wörterbuchprüfung angezeigt. Ohne Netzwerk funktioniert die lokale Regelprüfung weiter. Es werden keine vollständigen TDK-Wörterbücher heruntergeladen.
+
+Die Cloud-Netzwerkfreigaben für `tdk.gov.tr` und `sozluk.gov.tr` wurden nur als Konfigurationsentwurf gespeichert. Die laufende Cloud erlaubt diese Verbindung noch nicht; der echte TDK-Zugriff wurde dort daher nicht bestätigt. Parser/Fehlerzustände und Browseranzeige wurden mit simulierten Wörterbuchantworten geprüft. Auf Windows braucht die optionale Abfrage eine erreichbare TDK-Webseite. Die offizielle API kann sich ändern; unerwartete Antworten werden als nicht verfügbare Bestätigung behandelt.

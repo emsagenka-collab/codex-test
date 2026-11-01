@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import type { Word } from "@/lib/types";
 import { Highlight, formatDate, difficulty } from "./shared";
+import OrthographyPanel from "./orthography-panel";
 export default function WordCard({
   word: w,
   index,
@@ -117,6 +118,7 @@ export default function WordCard({
           </p>
         </div>
       </div>
+      <OrthographyPanel sentence={w.sentence} word={w.word} />
       <div className="expand-sections">
         <details>
           <summary>

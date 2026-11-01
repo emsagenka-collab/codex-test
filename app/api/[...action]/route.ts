@@ -9,6 +9,7 @@ import {
   exportData,
 } from "@/lib/db";
 import { extractText } from "@/lib/importer";
+import { lookupTdk } from "@/lib/tdk";
 import { analyzeWithAI } from "@/lib/ai";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -18,6 +19,21 @@ export async function GET(
 ) {
   try {
     const { action } = await params;
+    if (action[0] === "tdk") {
+      const word = request.nextUrl.searchParams.get("word") || "";
+      if (
+        !word ||
+        word.length > 80 ||
+        !/^\p{L}[\p{L}\p{M} '\u2019-]*$/u.test(word)
+      )
+        return NextResponse.json(
+          { error: "Bitte ein türkisches Wort eingeben." },
+          { status: 400 },
+        );
+      return NextResponse.json(await lookupTdk(word), {
+        headers: { "Cache-Control": "no-store" },
+      });
+    }
     if (action[0] === "state")
       return NextResponse.json(state(), {
         headers: { "Cache-Control": "no-store" },

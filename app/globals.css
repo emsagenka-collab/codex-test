@@ -2,8 +2,6 @@
 @import "@fontsource/dm-sans/500.css";
 @import "@fontsource/dm-sans/600.css";
 @import "@fontsource/libre-caslon-display/400.css";
-@import "@fontsource/allura/latin-400.css";
-@import "@fontsource/allura/latin-ext-400.css";
 :root {
   --bg: #f7f6f1;
   --paper: #fffefa;
@@ -129,12 +127,7 @@ small {
 }
 .brand-name {
   display: block;
-  font-family: "Allura", "Libre Caslon Display", cursive;
-  font-size: 40px;
-  font-weight: 400;
-  letter-spacing: 0;
-  line-height: 0.95;
-  color: var(--green);
+  line-height: 1.05;
 }
 .brand-symbol {
   flex-shrink: 0;
@@ -1569,8 +1562,8 @@ details[open] > summary > svg {
   .topbar {
     padding: 0 30px;
   }
-  .brand-name {
-    font-size: 37px;
+  .brand {
+    font-size: 27px;
   }
   .nav-item {
     padding: 14px 11px;
@@ -1614,9 +1607,8 @@ details[open] > summary > svg {
     align-items: center;
     gap: 8px;
     font:
-      32px / 1 "Allura",
-      "Libre Caslon Display",
-      cursive;
+      22px Georgia,
+      serif;
     color: var(--green);
   }
   .mobile-brand small {

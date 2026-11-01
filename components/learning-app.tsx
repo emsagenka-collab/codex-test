@@ -155,7 +155,11 @@ export default function LearningApp() {
   const reviewWord = reviewId
     ? data?.vocabulary.find((w) => w.id === reviewId)
     : reviewPool[0];
-  const weekly = Math.min(data?.stats.week || 0, 14);
+  const dailyGoal = data?.settings.dailyWordCount ?? 2;
+  const dailyGoalText = `${dailyGoal} ${dailyGoal === 1 ? "Wort" : "Wörter"}`;
+  const weeklyGoal = dailyGoal * 7;
+  const weekly = data?.stats.week || 0;
+  const weeklyPercent = Math.min(100, (weekly / weeklyGoal) * 100);
   return (
     <div className="app-shell">
       <aside className="sidebar">
@@ -207,7 +211,7 @@ export default function LearningApp() {
               <br />
               <strong>Bleibendes Wissen.</strong>
             </p>
-            <span>Jeden Tag zwei neue Perspektiven.</span>
+            <span>Dein Wortschatz. In deinem Tempo.</span>
           </div>
           <button className="settings-nav" onClick={() => setModal("settings")}>
             <SettingsIcon size={18} /> Einstellungen
@@ -289,7 +293,8 @@ export default function LearningApp() {
                         Ein guter Tag für neue Wörter<span>.</span>
                       </h1>
                       <p>
-                        Zwei Wörter. Ein bisschen Kontext. Wissen, das bleibt.
+                        {dailyGoalText} pro Tag. Ein bisschen Kontext. Wissen,
+                        das bleibt.
                       </p>
                     </div>
                     <div className="streak">
@@ -310,8 +315,8 @@ export default function LearningApp() {
                       <h2>Ein Buch. Viele neue Perspektiven.</h2>
                       <p>
                         Entdecke anspruchsvolle türkische Wörter aus deinem
-                        eigenen Siyer-i Nebi-Text. Jeden Tag nur zwei – mit Raum
-                        zum Verstehen.
+                        eigenen Siyer-i Nebi-Text. {dailyGoalText} pro Tag – mit
+                        Raum zum Verstehen.
                       </p>
                       <div className="welcome-steps">
                         <span>
@@ -364,8 +369,8 @@ export default function LearningApp() {
                               KLEINE SCHRITTE, JEDEN TAG
                             </div>
                             <h2>
-                              Bugünün iki kelimesi{" "}
-                              <span>Die zwei Wörter des Tages</span>
+                              Bugünün kelimeleri{" "}
+                              <span>Deine Wörter des Tages</span>
                             </h2>
                           </div>
                           <span className="lesson-count">
@@ -374,7 +379,7 @@ export default function LearningApp() {
                                 (w) => w.lastReviewed === data.today,
                               ).length
                             }{" "}
-                            / 2 entdeckt
+                            / {data.daily.length} entdeckt
                           </span>
                         </div>
                         {data.book?.isDemo === 1 && (
@@ -390,6 +395,14 @@ export default function LearningApp() {
                             </button>
                           </div>
                         )}
+                        {data.daily.length > 0 &&
+                          data.daily.length < dailyGoal && (
+                            <p className="muted">
+                              Aktuell verfügbar: {data.daily.length} von{" "}
+                              {dailyGoal} neuen Wörtern. Importiere weiteren
+                              Text, um deine Auswahl aufzufüllen.
+                            </p>
+                          )}
                         {data.daily.map((w, i) => (
                           <WordCard
                             key={w.id}
@@ -405,10 +418,8 @@ export default function LearningApp() {
                             <Leaf size={30} />
                             <h3>Raum für neue Wörter</h3>
                             <p>
-                              Für zwei neue Tageswörter fehlen noch passende,
+                              Für neue Tageswörter fehlen noch passende,
                               ungesehene Wörter. Importiere einen weiteren Text.
-                              Einzelne Restwörter bleiben für das nächste Paar
-                              erhalten.
                             </p>
                             <button
                               className="primary"
@@ -449,13 +460,14 @@ export default function LearningApp() {
                           </span>
                           <h3>Jedes Wort zählt.</h3>
                           <p>
-                            Diese Woche <strong>{weekly} von 14</strong> Wörtern
-                            begegnet
+                            Diese Woche{" "}
+                            <strong>
+                              {weekly} von {weeklyGoal}
+                            </strong>{" "}
+                            Wörtern begegnet
                           </p>
                           <div className="progress-track">
-                            <span
-                              style={{ width: `${(weekly / 14) * 100}%` }}
-                            />
+                            <span style={{ width: `${weeklyPercent}%` }} />
                           </div>
                         </div>
                         <div className="week-total">
@@ -603,7 +615,7 @@ export default function LearningApp() {
                   <PageHeading
                     eyebrow="KELİME HAZİNEM · MEIN WORTSCHATZ"
                     title="Wörter, die dich begleiten."
-                    description="Deine Sammlung wächst. Zwei Wörter nach dem anderen."
+                    description="Deine Sammlung wächst. Wort für Wort."
                   />
                   <div className="collection-toolbar">
                     <label className="search-box">
@@ -706,7 +718,7 @@ export default function LearningApp() {
                       <Search size={28} />
                       <h3>Noch keine Wörter in dieser Ansicht</h3>
                       <p>
-                        Ändere deine Suche oder entdecke deine ersten zwei
+                        Ändere deine Suche oder entdecke deine ersten
                         Tageswörter.
                       </p>
                     </div>
@@ -742,13 +754,15 @@ export default function LearningApp() {
                   <section className="panel">
                     <div className="eyebrow">DIESE WOCHE</div>
                     <h2>Kleine Schritte summieren sich.</h2>
-                    <p>{weekly} von 14 verschiedenen Wörtern bewertet</p>
+                    <p>
+                      {weekly} von {weeklyGoal} verschiedenen Wörtern bewertet
+                    </p>
                     <div className="progress-track">
-                      <span style={{ width: `${(weekly / 14) * 100}%` }} />
+                      <span style={{ width: `${weeklyPercent}%` }} />
                     </div>
                     <p className="muted">
-                      Ziel: zwei Wörter pro Tag. Wiederholungen stärken, was du
-                      schon kennst.
+                      Ziel: {dailyGoalText} pro Tag. Wiederholungen stärken, was
+                      du schon kennst.
                     </p>
                   </section>
                   <section className="panel">

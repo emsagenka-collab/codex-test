@@ -53,7 +53,7 @@ export default function WordCard({
     <article className="word-card">
       <div className="card-topline">
         <span className="eyebrow">
-          {index ? `0${index} / ` : ""}KELİME HAZİNESİ{" "}
+          {index ? `${String(index).padStart(2, "0")} / ` : ""}KELİME HAZİNESİ{" "}
           <span className="thin-line" />
         </span>
         <span className="difficulty">

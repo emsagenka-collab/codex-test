@@ -1,4 +1,4 @@
-# Kelime · Zwei Wörter. Jeden Tag.
+# Kelime Hazinesi · Her gün biraz daha.
 
 Eine ruhige, mobile Lernbibliothek für anspruchsvolle türkische Wörter. Next.js 16, React 19, TypeScript, lokal gespeicherte Schriftarten und SQLite. Kein Konto, kein automatischer Download von Buchtexten, kein externer Dienst für den Grundbetrieb.
 
@@ -24,14 +24,14 @@ Die App ist für eine einzelne Person auf einer lokalen/vertrauten Maschine ausg
 
 ## Was funktioniert
 
-- Zwei feste neue Tageswörter je Kalendertag der eingestellten Zeitzone (standardmäßig Berlin). Die Auswahl bleibt bei Neuladen, Niveauänderung und weiterem Import bestehen. Verpasste Tage werden nicht nachgeholt.
+- 1–100 einstellbare neue Tageswörter (standardmäßig 2) je Kalendertag der eingestellten Zeitzone (standardmäßig Berlin). Die Auswahl bleibt bei Neuladen und Niveauänderung bestehen. Änderungen der Wörterzahl gelten sofort; bereits bewertete Tageswörter bleiben auch bei einem niedrigeren Ziel erhalten. Verpasste Tage werden nicht nachgeholt.
 - Auswahl nach Häufigkeit und Nähe zum gewählten Niveau. Das Offline-Wörterbuch enthält 24 bewusst ausgewählte, gehobene Begriffe statt Eigennamen oder Funktionswörter. Einfache Beugungen und häufige Stamm-Lautwechsel werden erkannt; dies ist keine vollständige türkische Morphologieanalyse.
 - Originalsatz, Hervorhebung, Quelle, Abschnitt, Wortwissen und aufklappbarer Kontext. Jeder ausgewählte Satz wird gegen den tatsächlich importierten Text geprüft. Alle Vorkommen bleiben in SQLite erhalten.
-- Bewertungen, Wiederholungsplanung, umdrehbare Wiederholungskarten, Wortsuche und Statusfilter; fällige Wiederholungen sind zusätzlich zu den zwei neuen Wörtern verfügbar.
+- Bewertungen, Wiederholungsplanung, umdrehbare Wiederholungskarten, Wortsuche und Statusfilter; fällige Wiederholungen sind zusätzlich zu den neuen Tageswörtern verfügbar.
 - Fortschritt, Lernserie, Niveau, große Schrift, heller/dunkler/System-Modus, türkische Sprachausgabe über die auf dem Gerät verfügbaren Browserstimmen.
 - JSON-Datenexport und ausdrücklich bestätigtes Löschen aller Lerndaten. Beim Import weiterer Bücher bleiben bisherige Wörter und Lernstände erhalten.
 
-Sind weniger als zwei ungesehene passende Wörter vorhanden, wird keine unvollständige Lektion erzeugt. Die App fordert weiteren Text an. Neue Wörter erscheinen erst am nächsten Kalendertag, wenn die heutige Lektion bereits feststeht. „Bereits bekannt“ ist in den Details der Wortübersicht verfügbar.
+Sind weniger ungesehene passende Wörter als gewünscht vorhanden, zeigt die App die verfügbaren Wörter und einen Hinweis an. Weiterer Import kann eine unvollständige Tageslektion auffüllen. Beim Senken des Ziels bleiben entfernte, noch unbewertete Wörter für spätere Tage verfügbar. Bestehende Zwei-Wort-Lektionen und Einstellungen werden beim Update automatisch übernommen. „Bereits bekannt“ ist in den Details der Wortübersicht verfügbar.
 
 ## Import & optionale KI
 

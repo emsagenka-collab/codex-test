@@ -45,11 +45,38 @@ export function db() {
  CREATE TABLE IF NOT EXISTS VocabularyWord (id INTEGER PRIMARY KEY, word TEXT NOT NULL, normalizedWord TEXT NOT NULL UNIQUE, data TEXT NOT NULL);
  CREATE TABLE IF NOT EXISTS WordOccurrence (id INTEGER PRIMARY KEY, wordId INTEGER REFERENCES VocabularyWord(id), sectionId INTEGER REFERENCES TextSection(id), sentence TEXT NOT NULL, surroundingText TEXT NOT NULL, translation TEXT NOT NULL DEFAULT '', context TEXT NOT NULL DEFAULT '');
  CREATE TABLE IF NOT EXISTS LearningProgress (id INTEGER PRIMARY KEY, userId INTEGER REFERENCES User(id), wordId INTEGER REFERENCES VocabularyWord(id), status TEXT NOT NULL DEFAULT 'new', firstSeen TEXT, lastReviewed TEXT, nextReview TEXT, reviewCount INTEGER NOT NULL DEFAULT 0, difficultyRating TEXT, UNIQUE(userId,wordId));
- CREATE TABLE IF NOT EXISTS DailyWords (date TEXT PRIMARY KEY, word1 INTEGER REFERENCES VocabularyWord(id), word2 INTEGER REFERENCES VocabularyWord(id));
+ CREATE TABLE IF NOT EXISTS DailyWords (date TEXT PRIMARY KEY, word1 INTEGER REFERENCES VocabularyWord(id), word2 INTEGER REFERENCES VocabularyWord(id), wordIds TEXT NOT NULL DEFAULT '[]');
  CREATE TABLE IF NOT EXISTS Activity (day TEXT NOT NULL, wordId INTEGER REFERENCES VocabularyWord(id), UNIQUE(day,wordId));
  CREATE TABLE IF NOT EXISTS AppMeta (key TEXT PRIMARY KEY, value TEXT NOT NULL);`);
+  // Upgrade existing two-word lessons without changing their words or progress.
+  if (
+    !connection
+      .prepare("PRAGMA table_info(DailyWords)")
+      .all()
+      .some((column) => column.name === "wordIds")
+  ) {
+    connection.exec("BEGIN IMMEDIATE");
+    try {
+      connection.exec(
+        "ALTER TABLE DailyWords ADD COLUMN wordIds TEXT NOT NULL DEFAULT '[]'",
+      );
+      const update = connection.prepare(
+        "UPDATE DailyWords SET wordIds=? WHERE date=?",
+      );
+      for (const row of connection.prepare("SELECT * FROM DailyWords").all())
+        update.run(
+          JSON.stringify([row.word1, row.word2].filter((id) => id != null)),
+          row.date,
+        );
+      connection.exec("COMMIT");
+    } catch (e) {
+      connection.exec("ROLLBACK");
+      throw e;
+    }
+  }
   connection.prepare("INSERT OR IGNORE INTO User VALUES (1,?)").run(
     JSON.stringify({
+      dailyWordCount: 2,
       level: "B2",
       theme: "light",
       textSize: "normal",
@@ -68,9 +95,10 @@ function one(sql: string, ...args: (string | number)[]) {
   return all(sql, ...args)[0];
 }
 export function settings(): Settings {
-  return JSON.parse(
-    String(one("SELECT settings FROM User WHERE id=1").settings),
-  );
+  return {
+    dailyWordCount: 2,
+    ...JSON.parse(String(one("SELECT settings FROM User WHERE id=1").settings)),
+  };
 }
 export function saveSettings(input: Partial<Settings>) {
   const previous = settings();
@@ -82,6 +110,14 @@ export function saveSettings(input: Partial<Settings>) {
     !/^([01]\d|2[0-3]):[0-5]\d$/.test(merged.reminder)
   )
     throw new Error("Ungültige Einstellungen.");
+  if (
+    !Number.isInteger(merged.dailyWordCount) ||
+    merged.dailyWordCount < 1 ||
+    merged.dailyWordCount > 100
+  )
+    throw new Error(
+      "Bitte eine ganze Zahl zwischen 1 und 100 für die täglichen Wörter eingeben.",
+    );
   dayKey(new Date(), merged.timezone);
   db()
     .prepare("UPDATE User SET settings=? WHERE id=1")
@@ -115,9 +151,9 @@ export function importBook(
       ),
     }))
     .filter((x) => x.occurrences.length);
-  if (found.length < 2)
+  if (!found.length)
     throw new Error(
-      `Nur ${found.length} passende Wörter erkannt. Für eine Tageslektion werden mindestens zwei benötigt. Nutze einen längeren Text oder die optionale KI-Anbindung (siehe README).`,
+      `Nur ${found.length} passende Wörter erkannt. Für eine Tageslektion wird mindestens eines benötigt. Nutze einen längeren Text oder die optionale KI-Anbindung (siehe README).`,
     );
   db().exec("BEGIN IMMEDIATE");
   try {
@@ -254,12 +290,33 @@ function vocabulary(): Word[] {
 export function state(): State {
   const config = settings(),
     today = dayKey(new Date(), config.timezone);
-  let vocab = vocabulary();
-  let daily = one("SELECT * FROM DailyWords WHERE date=?", today);
-  if (!daily) {
+  let vocab: Word[];
+  let dailyIds: number[];
+  db().exec("BEGIN IMMEDIATE");
+  try {
+    vocab = vocabulary();
+    const daily = one("SELECT * FROM DailyWords WHERE date=?", today);
+    const previousIds: number[] = daily
+      ? JSON.parse(String(daily.wordIds))
+      : [];
+    const previousWords = previousIds
+      .map((id) => vocab.find((w) => w.id === id))
+      .filter((w): w is Word => !!w);
+    // A smaller goal never removes a word already rated today.
+    const reviewed = previousWords.filter((w) => w.lastReviewed === today);
+    let remaining = Math.max(0, config.dailyWordCount - reviewed.length);
+    const selected = previousWords.filter(
+      (w) => w.lastReviewed === today || remaining-- > 0,
+    );
     const level = config.level === "B1" ? 1 : config.level === "C1" ? 3 : 2;
     const candidates = vocab
-      .filter((w) => !w.firstSeen && w.status === "new" && w.frequency > 0)
+      .filter(
+        (w) =>
+          !w.firstSeen &&
+          w.status === "new" &&
+          w.frequency > 0 &&
+          !previousIds.includes(w.id),
+      )
       .sort(
         (a, b) =>
           b.frequency * 2 -
@@ -267,26 +324,42 @@ export function state(): State {
             (a.frequency * 2 - Math.abs(a.difficulty - level) * 3) ||
           a.id - b.id,
       );
-    if (candidates.length >= 2) {
-      db().exec("BEGIN IMMEDIATE");
-      try {
+    dailyIds = [
+      ...selected.map((w) => w.id),
+      ...candidates
+        .slice(0, Math.max(0, config.dailyWordCount - selected.length))
+        .map((w) => w.id),
+    ];
+    if (JSON.stringify(dailyIds) !== JSON.stringify(previousIds)) {
+      db()
+        .prepare(
+          "INSERT INTO DailyWords(date,word1,word2,wordIds) VALUES (?,?,?,?) ON CONFLICT(date) DO UPDATE SET word1=excluded.word1,word2=excluded.word2,wordIds=excluded.wordIds",
+        )
+        .run(
+          today,
+          dailyIds[0] ?? null,
+          dailyIds[1] ?? null,
+          JSON.stringify(dailyIds),
+        );
+      // Unrated words removed from today's lesson remain available on future days.
+      for (const id of previousIds.filter((id) => !dailyIds.includes(id)))
         db()
-          .prepare("INSERT OR IGNORE INTO DailyWords VALUES (?,?,?)")
-          .run(today, candidates[0].id, candidates[1].id);
-        daily = one("SELECT * FROM DailyWords WHERE date=?", today);
-        for (const id of [daily.word1, daily.word2])
-          db()
-            .prepare(
-              "UPDATE LearningProgress SET firstSeen=COALESCE(firstSeen,?) WHERE wordId=? AND userId=1",
-            )
-            .run(today, Number(id));
-        db().exec("COMMIT");
-      } catch (e) {
-        db().exec("ROLLBACK");
-        throw e;
-      }
+          .prepare(
+            "UPDATE LearningProgress SET firstSeen=NULL WHERE userId=1 AND wordId=? AND firstSeen=? AND status='new' AND reviewCount=0 AND lastReviewed IS NULL",
+          )
+          .run(id, today);
+      for (const id of dailyIds)
+        db()
+          .prepare(
+            "UPDATE LearningProgress SET firstSeen=COALESCE(firstSeen,?) WHERE wordId=? AND userId=1",
+          )
+          .run(today, id);
       vocab = vocabulary();
     }
+    db().exec("COMMIT");
+  } catch (e) {
+    db().exec("ROLLBACK");
+    throw e;
   }
   const days = all("SELECT DISTINCT day FROM Activity ORDER BY day DESC").map(
     (r) => String(r.day),
@@ -304,11 +377,9 @@ export function state(): State {
   );
   return {
     today,
-    daily: daily
-      ? [daily.word1, daily.word2]
-          .map((id) => vocab.find((w) => w.id === id)!)
-          .filter(Boolean)
-      : [],
+    daily: dailyIds
+      .map((id) => vocab.find((w) => w.id === id)!)
+      .filter(Boolean),
     vocabulary: vocab.filter((w) => !!w.firstSeen || w.status !== "new"),
     due: vocab.filter((w) => !!w.nextReview && w.nextReview <= today),
     book: bookRow

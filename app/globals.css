@@ -1414,6 +1414,10 @@ details[open] > summary > svg {
   font-size: 11px;
   max-width: 190px;
 }
+.setting-field input[type="number"] {
+  width: 84px;
+  font-variant-numeric: tabular-nums;
+}
 .settings-form .wide {
   margin-top: 15px;
 }

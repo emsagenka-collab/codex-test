@@ -176,10 +176,26 @@ export function SettingsForm({
         <label>Sprache der Erklärungen</label>
         <span>Deutsch</span>
       </div>
-      <div className="setting-field">
-        <label>Tägliche neue Wörter</label>
-        <span>2 Wörter · bewusst überschaubar</span>
-      </div>
+      <label className="setting-field">
+        Tägliche neue Wörter
+        <input
+          type="number"
+          min={1}
+          max={100}
+          step={1}
+          required
+          value={Number.isNaN(draft.dailyWordCount) ? "" : draft.dailyWordCount}
+          aria-describedby="daily-word-count-help"
+          onChange={(e) =>
+            setDraft((d) => ({ ...d, dailyWordCount: e.target.valueAsNumber }))
+          }
+        />
+      </label>
+      <p className="muted" id="daily-word-count-help">
+        1–100 Wörter pro Tag. Gilt direkt nach dem Speichern. Bereits bewertete
+        Tageswörter bleiben erhalten. Sind weniger neue Wörter verfügbar, zeigen
+        wir dir die vorhandenen.
+      </p>
       <label className="setting-field">
         Dein Türkisch-Niveau
         <select

@@ -5,6 +5,7 @@ test("mobile import, daily lesson, persistence and all navigation", async ({
   request,
 }) => {
   await request.post("/api/reset", { data: { confirm: "DELETE" } });
+  await request.post("/api/settings", { data: { dailyWordCount: 2 } });
   const browserErrors: string[] = [];
   page.on("pageerror", (e) => browserErrors.push(e.message));
   await page.setViewportSize({ width: 390, height: 844 });
@@ -78,6 +79,38 @@ test("mobile import, daily lesson, persistence and all navigation", async ({
   await page.getByRole("button", { name: "Gewusst", exact: true }).click();
   await expect(page.locator(".review-meta")).toContainText("1 in dieser Runde");
   await page.getByRole("button", { name: "Einstellungen öffnen" }).click();
+  const dailyCount = page.getByRole("spinbutton", {
+    name: "Tägliche neue Wörter",
+  });
+  await dailyCount.fill("0");
+  expect(
+    await dailyCount.evaluate(
+      (input: HTMLInputElement) => input.validity.valid,
+    ),
+  ).toBe(false);
+  await dailyCount.fill("5");
+  await page.getByRole("button", { name: "Einstellungen speichern" }).click();
+  await page
+    .locator(".bottom-nav")
+    .getByRole("button", { name: "Heute", exact: true })
+    .click();
+  await expect(page.locator("article.word-card")).toHaveCount(5);
+  await expect(page.locator(".lesson-count")).toContainText("/ 5 entdeckt");
+  await page.reload();
+  await expect(page.locator("article.word-card")).toHaveCount(5);
+  await page.getByRole("button", { name: "Einstellungen öffnen" }).click();
+  await expect(dailyCount).toHaveValue("5");
+  await dailyCount.fill("1");
+  await page.getByRole("button", { name: "Einstellungen speichern" }).click();
+  await expect(page.locator("article.word-card")).toHaveCount(1);
+  await expect(
+    page
+      .locator("article")
+      .first()
+      .getByText(/Gespeichert · nächste/),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Einstellungen öffnen" }).click();
+  await dailyCount.fill("2");
   await page.getByLabel("Darstellung").selectOption("dark");
   await page.getByRole("button", { name: "Einstellungen speichern" }).click();
   await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");

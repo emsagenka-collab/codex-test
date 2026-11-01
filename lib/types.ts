@@ -33,6 +33,7 @@ export type Word = Entry & {
   rating: string | null;
 };
 export type Settings = {
+  dailyWordCount: number;
   level: string;
   theme: string;
   textSize: string;

@@ -33,6 +33,16 @@ Die App ist für eine einzelne Person auf einer lokalen/vertrauten Maschine ausg
 
 Sind weniger ungesehene passende Wörter als gewünscht vorhanden, zeigt die App die verfügbaren Wörter und einen Hinweis an. Weiterer Import kann eine unvollständige Tageslektion auffüllen. Beim Senken des Ziels bleiben entfernte, noch unbewertete Wörter für spätere Tage verfügbar. Bestehende Zwei-Wort-Lektionen und Einstellungen werden beim Update automatisch übernommen. „Bereits bekannt“ ist in den Details der Wortübersicht verfügbar.
 
+## Beispielsätze aus dem Fließtext
+
+Die Satzwahl überspringt erkennbare Kapitelüberschriften, Inhaltsverzeichniseinträge,
+reine Seitenzahlen und unvollständige Satzfragmente. Das gilt beim Import und
+auch beim Anzeigen bereits gespeicherter Vorkommen. Originaltext, Schreibweise,
+Bewertungen und Tagesauswahl bleiben erhalten. Kann für ein bereits gelerntes
+Wort kein vollständiger Satz gefunden werden, zeigt die Karte einen Hinweis.
+Die Erkennung verwendet Layout- und Sprachmerkmale, keine vollständige
+Grammatikanalyse; ungewöhnliche Buchlayouts können weiterhin Sonderfälle enthalten.
+
 ## PDF-Seitenangaben
 
 Bei PDF-Importen wird die tatsächliche PDF-Seite neben dem Abschnitt angezeigt.

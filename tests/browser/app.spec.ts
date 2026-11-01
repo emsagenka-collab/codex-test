@@ -267,5 +267,29 @@ test("mobile import, daily lesson, persistence and all navigation", async ({
       () => document.documentElement.scrollWidth <= window.innerWidth,
     ),
   ).toBe(true);
+  await request.post("/api/reset", { data: { confirm: "DELETE" } });
+  const prose = "Daha sonra Habeşistan’a hicret etti.";
+  const headings = await request.post("/api/import", {
+    multipart: {
+      file: {
+        name: "überschriften.txt",
+        mimeType: "text/plain",
+        buffer: Buffer.from(
+          "49 VII- HABEŞİSTAN’A HİCRET .\n" +
+            prose +
+            "\n\nMETANET VE SABIR\nMetanet ile bekledi.",
+        ),
+      },
+    },
+  });
+  expect(await headings.json()).toHaveProperty("ok", true);
+  await page.reload();
+  const hicretCard = page.locator("article.word-card").filter({
+    has: page.getByRole("heading", { name: "hicret", exact: true }),
+  });
+  await expect(hicretCard.locator(".example>blockquote")).toContainText(prose);
+  await expect(hicretCard.locator(".example>blockquote")).not.toContainText(
+    "VII-",
+  );
   expect(browserErrors).toEqual([]);
 });

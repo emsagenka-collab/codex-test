@@ -1,3 +1,4 @@
+import { exampleSentences } from "./example-sentences";
 import { DatabaseSync } from "node:sqlite";
 import { mkdirSync } from "node:fs";
 import path from "node:path";
@@ -8,7 +9,6 @@ import {
   dayKey,
   normalize,
   schedule,
-  sentences,
   splitSections,
   tokens,
   matches,
@@ -162,7 +162,7 @@ export function importBook(
     if (start < 0) throw new Error("Quellenprüfung fehlgeschlagen.");
     sectionOffset = start + section.length;
     let sentenceOffset = 0;
-    return sentences(section).map((sentence) => {
+    return exampleSentences(section).map((sentence) => {
       const sentenceStart = section.indexOf(sentence, sentenceOffset);
       sentenceOffset = sentenceStart + sentence.length;
       const startOffset = start + sentenceStart;
@@ -198,7 +198,7 @@ export function importBook(
     .filter((x) => x.occurrences.length);
   if (!found.length)
     throw new Error(
-      `Nur ${found.length} passende Wörter erkannt. Für eine Tageslektion wird mindestens eines benötigt. Nutze einen längeren Text oder die optionale KI-Anbindung (siehe README).`,
+      `Nur ${found.length} passende Wörter in vollständigen Beispielsätzen erkannt. Für eine Tageslektion wird mindestens eines benötigt. Nutze einen längeren Text oder die optionale KI-Anbindung (siehe README).`,
     );
   db().exec("BEGIN IMMEDIATE");
   try {
@@ -289,14 +289,32 @@ function vocabulary(): Word[] {
   return all(
     `SELECT v.id,v.data,p.*,v.id AS vocabularyId FROM VocabularyWord v JOIN LearningProgress p ON p.wordId=v.id WHERE EXISTS (SELECT 1 FROM WordOccurrence WHERE wordId=v.id)`,
   ).map((row) => {
-    const o = one(
-      `SELECT o.*,s.sectionNumber,b.title,b.isDemo,b.id AS bookId FROM WordOccurrence o JOIN TextSection s ON s.id=o.sectionId JOIN Book b ON b.id=s.bookId WHERE o.wordId=? ORDER BY (b.id=?) DESC,(o.sentence=?) DESC,b.isDemo ASC,o.id ASC LIMIT 1`,
+    const occurrences = all(
+      `SELECT o.*,s.sectionNumber,b.title,b.isDemo,b.id AS bookId FROM WordOccurrence o JOIN TextSection s ON s.id=o.sectionId JOIN Book b ON b.id=s.bookId WHERE o.wordId=? ORDER BY (b.id=?) DESC,(o.sentence=?) DESC,b.isDemo ASC,o.id ASC`,
       Number(row.vocabularyId),
       active,
       JSON.parse(String(row.data)).demo,
     );
+    const entry = JSON.parse(String(row.data)) as Entry;
+    const candidates = occurrences.flatMap((occurrence) => {
+      const legacy =
+        !occurrence.isDemo && legacyBook(Number(occurrence.bookId));
+      return exampleSentences(String(occurrence.sentence))
+        .filter((sentence) =>
+          containsWord(repairTurkishText(sentence, legacy), entry.word),
+        )
+        .map((sentence) => ({ occurrence, sentence }));
+    });
+    const selected = candidates[0];
+    const o = selected?.occurrence || occurrences[0];
+    const rawSentence = selected?.sentence || "";
+    const unchanged = rawSentence === o.sentence;
     const legacy = !o.isDemo && legacyBook(Number(o.bookId));
-    const sentence = repairTurkishText(String(o.sentence), legacy);
+    const sentence = repairTurkishText(rawSentence, legacy);
+    // If an old combined heading/paragraph spanned pages, its trimmed excerpt
+    // cannot safely inherit the entire occurrence's page range.
+    const hasExactPages =
+      !!selected && (unchanged || o.pageNumber === o.pageEnd);
     const section = repairTurkishText(String(o.surroundingText), legacy);
     return {
       ...JSON.parse(String(row.data)),
@@ -307,26 +325,22 @@ function vocabulary(): Word[] {
       wordOrthography: checkTurkishOrthography(
         JSON.parse(String(row.data)).word,
       ),
-      originalSentence:
-        sentence !== String(o.sentence) ? String(o.sentence) : null,
+      originalSentence: sentence !== rawSentence ? rawSentence : null,
       originalSection:
         section !== String(o.surroundingText)
           ? String(o.surroundingText)
           : null,
       sectionNumber: Number(o.sectionNumber),
-      pageNumber: o.pageNumber == null ? null : Number(o.pageNumber),
-      pageEnd: o.pageEnd == null ? null : Number(o.pageEnd),
+      pageNumber:
+        !hasExactPages || o.pageNumber == null ? null : Number(o.pageNumber),
+      pageEnd: !hasExactPages || o.pageEnd == null ? null : Number(o.pageEnd),
       source: String(o.title),
       demoBook: !!o.isDemo,
-      sentenceTranslation: String(o.translation),
-      contextExplanation: String(o.context),
-      frequency: Number(
-        one(
-          "SELECT COUNT(*) AS n FROM WordOccurrence o JOIN TextSection s ON s.id=o.sectionId WHERE o.wordId=? AND s.bookId=?",
-          Number(row.vocabularyId),
-          active,
-        ).n,
-      ),
+      sentenceTranslation: unchanged ? String(o.translation) : "",
+      contextExplanation: unchanged ? String(o.context) : "",
+      frequency: candidates.filter(
+        (candidate) => Number(candidate.occurrence.bookId) === active,
+      ).length,
       status: String(row.status),
       firstSeen: row.firstSeen as string | null,
       lastReviewed: row.lastReviewed as string | null,

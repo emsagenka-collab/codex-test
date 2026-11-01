@@ -75,40 +75,49 @@ export default function WordCard({
       </div>
       <div className="meaning">{w.meaning}</div>
       <p className="definition">{w.explanation}</p>
-      <div className="example">
-        <div className="example-label">
-          <BookOpen size={14} />
-          {w.demoBook ? "AUS DEM DEMOTEXT" : "AUS DEINEM BUCH"}
-          <span className="source-location">
-            <span>Abschnitt {w.sectionNumber}</span>
-            {w.pageNumber != null && (
-              <span title="Seitenposition in der PDF-Datei; die gedruckte Buchseite kann abweichen.">
-                PDF-Seite {w.pageNumber}
-                {w.pageEnd != null && w.pageEnd !== w.pageNumber
-                  ? `–${w.pageEnd}`
-                  : ""}
-              </span>
-            )}
-          </span>
+      {w.sentence ? (
+        <div className="example">
+          <div className="example-label">
+            <BookOpen size={14} />
+            {w.demoBook ? "AUS DEM DEMOTEXT" : "AUS DEINEM BUCH"}
+            <span className="source-location">
+              <span>Abschnitt {w.sectionNumber}</span>
+              {w.pageNumber != null && (
+                <span title="Seitenposition in der PDF-Datei; die gedruckte Buchseite kann abweichen.">
+                  PDF-Seite {w.pageNumber}
+                  {w.pageEnd != null && w.pageEnd !== w.pageNumber
+                    ? `–${w.pageEnd}`
+                    : ""}
+                </span>
+              )}
+            </span>
+          </div>
+          <blockquote lang="tr">
+            „<Highlight text={w.sentence} word={w.word} />“
+          </blockquote>
+          {w.sentenceTranslation && (
+            <p className="sentence-translation">
+              {!w.demoBook && (
+                <span className="ai-label">KI-Übersetzung · </span>
+              )}
+              {w.sentenceTranslation}
+            </p>
+          )}
+          <div className="in-context">
+            <span>IM SATZ</span>
+            <p>
+              {w.demoBook || w.sentenceTranslation
+                ? w.explanation
+                : `„${w.word}“ erscheint hier in der Bedeutung „${w.meaning}“. Die genaue Nuance hängt vom Originalabschnitt ab.`}
+            </p>
+          </div>
         </div>
-        <blockquote lang="tr">
-          „<Highlight text={w.sentence} word={w.word} />“
-        </blockquote>
-        {w.sentenceTranslation && (
-          <p className="sentence-translation">
-            {!w.demoBook && <span className="ai-label">KI-Übersetzung · </span>}
-            {w.sentenceTranslation}
-          </p>
-        )}
-        <div className="in-context">
-          <span>IM SATZ</span>
-          <p>
-            {w.demoBook || w.sentenceTranslation
-              ? w.explanation
-              : `„${w.word}“ erscheint hier in der Bedeutung „${w.meaning}“. Die genaue Nuance hängt vom Originalabschnitt ab.`}
-          </p>
-        </div>
-      </div>
+      ) : (
+        <p className="muted">
+          Für dieses Wort wurde noch kein vollständiger Beispielsatz in der
+          Quelle gefunden.
+        </p>
+      )}
       <div className="expand-sections">
         <details>
           <summary>

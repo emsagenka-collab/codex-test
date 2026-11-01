@@ -1,4 +1,4 @@
-import { exampleSentences } from "./example-sentences";
+import { exampleSentences, isContentsText } from "./example-sentences";
 import { DatabaseSync } from "node:sqlite";
 import { mkdirSync } from "node:fs";
 import path from "node:path";
@@ -297,6 +297,7 @@ function vocabulary(): Word[] {
     );
     const entry = JSON.parse(String(row.data)) as Entry;
     const candidates = occurrences.flatMap((occurrence) => {
+      if (isContentsText(String(occurrence.surroundingText))) return [];
       const legacy =
         !occurrence.isDemo && legacyBook(Number(occurrence.bookId));
       return exampleSentences(String(occurrence.sentence))

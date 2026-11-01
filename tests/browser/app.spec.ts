@@ -275,7 +275,7 @@ test("mobile import, daily lesson, persistence and all navigation", async ({
         name: "überschriften.txt",
         mimeType: "text/plain",
         buffer: Buffer.from(
-          "49 VII- HABEŞİSTAN’A HİCRET .\n" +
+          "49 VII- HABEŞİSTAN’A HİCRET .\na) Habeşistan’a hicret edenler .\n" +
             prose +
             "\n\nMETANET VE SABIR\nMetanet ile bekledi.",
         ),
@@ -290,6 +290,9 @@ test("mobile import, daily lesson, persistence and all navigation", async ({
   await expect(hicretCard.locator(".example>blockquote")).toContainText(prose);
   await expect(hicretCard.locator(".example>blockquote")).not.toContainText(
     "VII-",
+  );
+  await expect(hicretCard.locator(".example>blockquote")).not.toContainText(
+    "edenler",
   );
   expect(browserErrors).toEqual([]);
 });

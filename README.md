@@ -36,7 +36,9 @@ Sind weniger ungesehene passende Wörter als gewünscht vorhanden, zeigt die App
 ## Beispielsätze aus dem Fließtext
 
 Die Satzwahl überspringt erkennbare Kapitelüberschriften, Inhaltsverzeichniseinträge,
-reine Seitenzahlen und unvollständige Satzfragmente. Das gilt beim Import und
+reine Seitenzahlen und unvollständige Satzfragmente. Alphabetische Unterpunkte
+wie „a) Habeşistan’a hicret edenler“ und entsprechend gekennzeichnete
+Inhaltsverzeichnis-Abschnitte werden ebenfalls ausgeschlossen. Das gilt beim Import und
 auch beim Anzeigen bereits gespeicherter Vorkommen. Originaltext, Schreibweise,
 Bewertungen und Tagesauswahl bleiben erhalten. Kann für ein bereits gelerntes
 Wort kein vollständiger Satz gefunden werden, zeigt die Karte einen Hinweis.

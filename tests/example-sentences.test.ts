@@ -15,6 +15,14 @@ test("chapter titles, table-of-contents entries and fragments are not learning e
     "49",
     "VII.",
     "Hicret ederken yolda",
+    "a) Habeşistan’a hicret edenler.",
+    "a) Habeşistan’a hicret edenler .",
+    "b) Habeşistan’a hicret edenler",
+    "(c) Habeşistan’a hicret edenler.",
+    "d. Habeşistan’a hicret edenler.",
+    "• Habeşistan’a hicret edenler.",
+    "Habeşistan’a hicret edenler.",
+    "Medine’ye hicret edenlerin.",
   ])
     assert.deepEqual(exampleSentences(heading), [], heading);
 });
@@ -45,4 +53,20 @@ test("capitalized prose, questions, commands and nominal sentences are not rewri
   ];
   for (const sentence of examples)
     assert.deepEqual(exampleSentences(sentence), [sentence]);
+});
+
+test("contents context excludes even grammatical entries, but ordinary numbered prose remains", () => {
+  const index =
+    "İÇİNDEKİLER\na) Habeşistan’a hicret ettiler.\nb) Medine’ye hicret etti.";
+  assert.deepEqual(exampleSentences(index), []);
+  const prose = "a) Habeşistan’a hicret ettiler.";
+  assert.deepEqual(exampleSentences(prose), [prose]);
+  const wrapped =
+    "a) Habeşistan’a hicret edenler\nyolda metanetlerini korudular.";
+  assert.deepEqual(exampleSentences(wrapped), [wrapped]);
+  const mixed =
+    "a) Habeşistan’a hicret edenler.\nb) Medine’ye hicret edenler.\nDaha sonra Habeşistan’a hicret etti.";
+  assert.deepEqual(exampleSentences(mixed), [
+    "Daha sonra Habeşistan’a hicret etti.",
+  ]);
 });

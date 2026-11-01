@@ -19,7 +19,7 @@ test("new and existing imports prefer verbatim prose with correct pages and pres
   const heading = "49 VII- HABEŞİSTAN’A HİCRET .";
   const sentence = "Daha sonra Habeşistan’a hicret etti.";
   const pages = [
-    { pageNumber: 1, text: heading },
+    { pageNumber: 1, text: heading + "\na) Habeşistan’a hicret edenler." },
     { pageNumber: 2, text: sentence + " Metanet ile bekledi." },
   ];
   try {
@@ -63,6 +63,27 @@ test("new and existing imports prefer verbatim prose with correct pages and pres
     assert.equal(corrected.rating, "hard");
     assert.equal(JSON.stringify(exportData().progress), progressBefore);
     assert.equal(JSON.stringify(exportData().daily), dailyBefore);
+
+    for (const [fragment, context] of [
+      ["a) Habeşistan’a hicret edenler.", "a) Habeşistan’a hicret edenler."],
+      [
+        "a) Habeşistan’a hicret ettiler.",
+        "İÇİNDEKİLER\na) Habeşistan’a hicret ettiler.",
+      ],
+    ]) {
+      db()
+        .prepare(
+          "UPDATE WordOccurrence SET sentence=?,surroundingText=? WHERE id=0",
+        )
+        .run(fragment, context);
+      const selected = state().daily.find((word) => word.id === hicret.id)!;
+      assert.equal(selected.sentence, sentence);
+      assert.equal(selected.pageNumber, 2);
+      assert.equal(selected.rating, "hard");
+      assert.equal(selected.frequency, 1);
+      assert.equal(JSON.stringify(exportData().progress), progressBefore);
+      assert.equal(JSON.stringify(exportData().daily), dailyBefore);
+    }
 
     // A word found only in a heading is not offered as a new daily word.
     const entry = lexicon.find((entry) => entry.word === "müjde")!;

@@ -8,6 +8,18 @@ function hasPredicate(text: string) {
     ),
   );
 }
+function hasListMarker(text: string) {
+  return /^(?:\(?[a-zçğıöşü][.)]{1,2}|[•●▪◦*–—-])\s*\p{L}/iu.test(text.trim());
+}
+export function isContentsText(text: string) {
+  return text
+    .split("\n")
+    .some((line) =>
+      /^(?:içindekiler(?: tablosu)?|fihrist|contents|table of contents)[\s.:–—-]*$/u.test(
+        line.trim().normalize("NFC").toLocaleLowerCase("tr-TR"),
+      ),
+    );
+}
 function isHeadingOrIndex(text: string) {
   const line = text.trim();
   if (!line) return false;
@@ -32,7 +44,12 @@ function isHeadingOrIndex(text: string) {
     /\s+\d+(?:\s*[–-]\s*\d+)?$/u.test(line)
   )
     return true;
-  if (words.length <= 20 && !predicate && (capitals || numbered)) return true;
+  if (
+    words.length <= 24 &&
+    !predicate &&
+    (capitals || numbered || hasListMarker(line))
+  )
+    return true;
   // Mixed-case chapter titles without sentence punctuation.
   const titleCase =
     words.length > 1 &&
@@ -43,14 +60,24 @@ function isHeadingOrIndex(text: string) {
   return !predicate && titleCase && !/[.!?][”’"'»)]*$/u.test(line);
 }
 function isCompleteExample(text: string) {
+  const words = tokens(text);
+  // Participial noun phrases remain fragments even if PDF extraction adds a dot.
+  // Keep true nominal clauses such as "Onlar hicret edenler.".
+  const nominalClause =
+    /^(?:bu|şu|o|bunlar|şunlar|onlar|ben|sen|biz|siz)\b/iu.test(text.trim());
+  const participialEnding = /(?:an|en)(?:lar|ler)(?:ın|in|un|ün)?$/u.test(
+    words.at(-1) || "",
+  );
+  if (!nominalClause && participialEnding && !hasPredicate(text)) return false;
   return (
-    tokens(text).length >= 2 &&
+    words.length >= 2 &&
     /[.!?][”’"'»)]*$/u.test(text) &&
     !isHeadingOrIndex(text)
   );
 }
 /** Return verbatim source excerpts, excluding obvious titles, indexes and fragments. */
 export function exampleSentences(section: string): string[] {
+  if (isContentsText(section)) return [];
   const result: string[] = [];
   let paragraph: string[] = [];
   function flush() {
@@ -59,8 +86,17 @@ export function exampleSentences(section: string): string[] {
       paragraph = [];
     }
   }
-  for (const line of section.split("\n")) {
-    if (!line.trim() || isHeadingOrIndex(line)) flush();
+  const lines = section.split("\n");
+  for (let index = 0; index < lines.length; index++) {
+    const line = lines[index];
+    const next = lines[index + 1]?.trim() || "";
+    const wrappedListSentence =
+      hasListMarker(line) &&
+      !/[.!?][”’"'»)]*$/u.test(line.trim()) &&
+      /^\p{Ll}/u.test(next) &&
+      !hasListMarker(next);
+    if (!line.trim() || (isHeadingOrIndex(line) && !wrappedListSentence))
+      flush();
     else paragraph.push(line);
   }
   flush();

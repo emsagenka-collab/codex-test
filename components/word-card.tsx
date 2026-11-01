@@ -79,7 +79,17 @@ export default function WordCard({
         <div className="example-label">
           <BookOpen size={14} />
           {w.demoBook ? "AUS DEM DEMOTEXT" : "AUS DEINEM BUCH"}
-          <span>Abschnitt {w.sectionNumber}</span>
+          <span className="source-location">
+            <span>Abschnitt {w.sectionNumber}</span>
+            {w.pageNumber != null && (
+              <span title="Seitenposition in der PDF-Datei; die gedruckte Buchseite kann abweichen.">
+                PDF-Seite {w.pageNumber}
+                {w.pageEnd != null && w.pageEnd !== w.pageNumber
+                  ? `–${w.pageEnd}`
+                  : ""}
+              </span>
+            )}
+          </span>
         </div>
         <blockquote lang="tr">
           „<Highlight text={w.sentence} word={w.word} />“

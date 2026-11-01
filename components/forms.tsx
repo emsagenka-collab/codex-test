@@ -115,8 +115,9 @@ export function ImportForm({
       )}
       {data?.book && (
         <p className="muted">
-          Deine bisherigen Wörter bleiben erhalten. Die beiden heutigen
-          Tageswörter bleiben bis morgen unverändert.
+          Deine bisherigen Wörter und Bewertungen bleiben erhalten. Noch
+          fehlende Tageswörter werden ergänzt. Für PDF-Seitenangaben bei älteren
+          Importen bitte das Buch erneut importieren.
         </p>
       )}
       <button className="primary wide" disabled={!file || busy} type="submit">

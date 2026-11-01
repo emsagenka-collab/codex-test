@@ -242,5 +242,30 @@ test("mobile import, daily lesson, persistence and all navigation", async ({
     },
   });
   expect(await pdf.json()).toHaveProperty("ok", true);
+  await request.post("/api/reset", { data: { confirm: "DELETE" } });
+  const paged = await request.post("/api/import", {
+    multipart: {
+      file: {
+        name: "zwei-seiten.pdf",
+        mimeType: "application/pdf",
+        buffer: readFileSync("tests/fixtures/two-pages.pdf"),
+      },
+    },
+  });
+  const pagedState = await paged.json();
+  expect(pagedState.ok).toBe(true);
+  await page.reload();
+  const emanetCard = page.locator("article.word-card").filter({
+    has: page.getByRole("heading", { name: "emanet", exact: true }),
+  });
+  await expect(emanetCard.locator(".source-location")).toContainText(
+    "PDF-Seite 2",
+  );
+  await page.setViewportSize({ width: 320, height: 740 });
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= window.innerWidth,
+    ),
+  ).toBe(true);
   expect(browserErrors).toEqual([]);
 });

@@ -1,11 +1,18 @@
 import JSZip from "jszip";
+import type { ExtractedDocument } from "./types";
 export async function extractText(file: File) {
+  return (await extractDocument(file)).text;
+}
+export async function extractDocument(file: File): Promise<ExtractedDocument> {
   const ext = file.name.split(".").pop()?.toLowerCase();
   const bytes = Buffer.from(await file.arrayBuffer());
   if (ext === "txt" || ext === "md")
-    return new TextDecoder("utf-8", { fatal: true })
-      .decode(bytes)
-      .replace(/^\uFEFF/, "");
+    return {
+      text: new TextDecoder("utf-8", { fatal: true })
+        .decode(bytes)
+        .replace(/^\uFEFF/, ""),
+      pages: [],
+    };
   if (ext === "pdf") {
     const { PDFParse } = await import("pdf-parse");
     const parser = new PDFParse({ data: bytes });
@@ -19,7 +26,12 @@ export async function extractText(file: File) {
         pageJoiner: "\n\n",
         disableNormalization: true,
       });
-      return result.text;
+      const pages = result.pages.map((page) => ({
+        pageNumber: page.num,
+        text: page.text,
+      }));
+      // A single line break preserves sentences continued on the following page.
+      return { text: pages.map((page) => page.text).join("\n"), pages };
     } finally {
       await parser.destroy();
     }
@@ -70,7 +82,7 @@ export async function extractText(file: File) {
           .replace(/&#(\d+);/g, (_, n) => String.fromCodePoint(Number(n))),
       );
     }
-    return texts.join("\n\n");
+    return { text: texts.join("\n\n"), pages: [] };
   }
   throw new Error("Bitte eine TXT-, PDF- oder EPUB-Datei auswählen.");
 }

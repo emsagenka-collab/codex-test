@@ -8,7 +8,7 @@ import {
   reset,
   exportData,
 } from "@/lib/db";
-import { extractText } from "@/lib/importer";
+import { extractDocument } from "@/lib/importer";
 import { lookupTdk } from "@/lib/tdk";
 import { analyzeWithAI } from "@/lib/ai";
 export const runtime = "nodejs";
@@ -101,7 +101,12 @@ export async function POST(
           throw new Error("Bitte eine Datei auswählen.");
         if (file.size > 15 * 1024 * 1024)
           throw new Error("Die Datei darf maximal 15 MB groß sein.");
-        const text = (await extractText(file)).normalize("NFC");
+        const document = await extractDocument(file);
+        const text = document.text.normalize("NFC");
+        const pages = document.pages.map((page) => ({
+          ...page,
+          text: page.text.normalize("NFC"),
+        }));
         if (text.length > 3_000_000)
           throw new Error(
             "Bitte das Buch in kleinere Teile aufteilen (maximal 3 Millionen Zeichen).",
@@ -113,6 +118,7 @@ export async function POST(
           text,
           false,
           extra,
+          pages,
         );
         const level = form.get("level");
         if (typeof level === "string" && ["B1", "B2", "C1"].includes(level))

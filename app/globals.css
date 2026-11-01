@@ -526,6 +526,13 @@ main {
   letter-spacing: 1.5px;
   color: #90927e;
 }
+.example-label .source-location {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 3px 9px;
+  text-align: right;
+}
 .example-label > span {
   font-size: 8px;
   letter-spacing: 0;

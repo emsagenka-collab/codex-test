@@ -15,7 +15,7 @@ import {
 } from "./learning";
 import { checkTurkishOrthography } from "./orthography";
 import { hasLegacyTurkishGlyphs, repairTurkishText } from "./text-repair";
-import type { Entry, Settings, State, Word } from "./types";
+import type { Entry, Settings, SourcePage, State, Word } from "./types";
 let connection: DatabaseSync;
 const legacyBooks = new Map<number, boolean>();
 function legacyBook(bookId: number) {
@@ -43,11 +43,19 @@ export function db() {
  CREATE TABLE IF NOT EXISTS Book (id INTEGER PRIMARY KEY, title TEXT NOT NULL, importedAt TEXT NOT NULL, isDemo INTEGER NOT NULL DEFAULT 0);
  CREATE TABLE IF NOT EXISTS TextSection (id INTEGER PRIMARY KEY, bookId INTEGER REFERENCES Book(id), sectionNumber INTEGER, originalText TEXT NOT NULL);
  CREATE TABLE IF NOT EXISTS VocabularyWord (id INTEGER PRIMARY KEY, word TEXT NOT NULL, normalizedWord TEXT NOT NULL UNIQUE, data TEXT NOT NULL);
- CREATE TABLE IF NOT EXISTS WordOccurrence (id INTEGER PRIMARY KEY, wordId INTEGER REFERENCES VocabularyWord(id), sectionId INTEGER REFERENCES TextSection(id), sentence TEXT NOT NULL, surroundingText TEXT NOT NULL, translation TEXT NOT NULL DEFAULT '', context TEXT NOT NULL DEFAULT '');
+ CREATE TABLE IF NOT EXISTS WordOccurrence (id INTEGER PRIMARY KEY, wordId INTEGER REFERENCES VocabularyWord(id), sectionId INTEGER REFERENCES TextSection(id), sentence TEXT NOT NULL, surroundingText TEXT NOT NULL, translation TEXT NOT NULL DEFAULT '', context TEXT NOT NULL DEFAULT '', pageNumber INTEGER, pageEnd INTEGER);
  CREATE TABLE IF NOT EXISTS LearningProgress (id INTEGER PRIMARY KEY, userId INTEGER REFERENCES User(id), wordId INTEGER REFERENCES VocabularyWord(id), status TEXT NOT NULL DEFAULT 'new', firstSeen TEXT, lastReviewed TEXT, nextReview TEXT, reviewCount INTEGER NOT NULL DEFAULT 0, difficultyRating TEXT, UNIQUE(userId,wordId));
  CREATE TABLE IF NOT EXISTS DailyWords (date TEXT PRIMARY KEY, word1 INTEGER REFERENCES VocabularyWord(id), word2 INTEGER REFERENCES VocabularyWord(id), wordIds TEXT NOT NULL DEFAULT '[]');
  CREATE TABLE IF NOT EXISTS Activity (day TEXT NOT NULL, wordId INTEGER REFERENCES VocabularyWord(id), UNIQUE(day,wordId));
  CREATE TABLE IF NOT EXISTS AppMeta (key TEXT PRIMARY KEY, value TEXT NOT NULL);`);
+  const occurrenceColumns = connection
+    .prepare("PRAGMA table_info(WordOccurrence)")
+    .all();
+  for (const column of ["pageNumber", "pageEnd"])
+    if (!occurrenceColumns.some((item) => item.name === column))
+      connection.exec(
+        `ALTER TABLE WordOccurrence ADD COLUMN ${column} INTEGER`,
+      );
   // Upgrade existing two-word lessons without changing their words or progress.
   if (
     !connection
@@ -128,6 +136,7 @@ export function importBook(
   text: string,
   isDemo = false,
   extra: Entry[] = [],
+  pages: SourcePage[] = [],
 ) {
   const legacy = !isDemo && hasLegacyTurkishGlyphs(text);
   const sections = splitSections(text);
@@ -135,6 +144,44 @@ export function importBook(
     throw new Error(
       "Kein lesbarer Text gefunden. Bei gescannten PDFs bitte zuerst OCR verwenden.",
     );
+  if (pages.length && pages.map((page) => page.text).join("\n") !== text)
+    throw new Error(
+      "Die PDF-Seitenzuordnung stimmt nicht mit dem Quelltext überein.",
+    );
+  const positionText = text.replace(/\r\n/g, "\n");
+  let pageOffset = 0;
+  const pageRanges = pages.map((page) => {
+    const start = pageOffset;
+    const length = page.text.replace(/\r\n/g, "\n").length;
+    pageOffset += length + 1;
+    return { ...page, start, end: start + length };
+  });
+  let sectionOffset = 0;
+  const locatedSentences = sections.flatMap((section, i) => {
+    const start = positionText.indexOf(section, sectionOffset);
+    if (start < 0) throw new Error("Quellenprüfung fehlgeschlagen.");
+    sectionOffset = start + section.length;
+    let sentenceOffset = 0;
+    return sentences(section).map((sentence) => {
+      const sentenceStart = section.indexOf(sentence, sentenceOffset);
+      sentenceOffset = sentenceStart + sentence.length;
+      const startOffset = start + sentenceStart;
+      const endOffset = startOffset + sentence.length - 1;
+      return {
+        section,
+        i,
+        sentence,
+        pageNumber:
+          pageRanges.find(
+            (page) => page.start <= startOffset && startOffset < page.end,
+          )?.pageNumber ?? null,
+        pageEnd:
+          pageRanges.find(
+            (page) => page.start <= endOffset && endOffset < page.end,
+          )?.pageNumber ?? null,
+      };
+    });
+  });
   const dictionary = [
     ...extra,
     ...lexicon.filter(
@@ -144,10 +191,8 @@ export function importBook(
   const found = dictionary
     .map((entry) => ({
       entry,
-      occurrences: sections.flatMap((section, i) =>
-        sentences(section)
-          .filter((s) => containsWord(repairTurkishText(s, legacy), entry.word))
-          .map((sentence) => ({ section, i, sentence })),
+      occurrences: locatedSentences.filter((occ) =>
+        containsWord(repairTurkishText(occ.sentence, legacy), entry.word),
       ),
     }))
     .filter((x) => x.occurrences.length);
@@ -188,7 +233,7 @@ export function importBook(
           throw new Error("Quellenprüfung fehlgeschlagen.");
         db()
           .prepare(
-            "INSERT INTO WordOccurrence(wordId,sectionId,sentence,surroundingText,translation,context) VALUES (?,?,?,?,?,?)",
+            "INSERT INTO WordOccurrence(wordId,sectionId,sentence,surroundingText,translation,context,pageNumber,pageEnd) VALUES (?,?,?,?,?,?,?,?)",
           )
           .run(
             wordId,
@@ -207,6 +252,8 @@ export function importBook(
                   entry.demo === repairTurkishText(occ.sentence, legacy)
                 ? entry.context
                 : "",
+            occ.pageNumber,
+            occ.pageEnd,
           );
       }
       db()
@@ -267,6 +314,8 @@ function vocabulary(): Word[] {
           ? String(o.surroundingText)
           : null,
       sectionNumber: Number(o.sectionNumber),
+      pageNumber: o.pageNumber == null ? null : Number(o.pageNumber),
+      pageEnd: o.pageEnd == null ? null : Number(o.pageEnd),
       source: String(o.title),
       demoBook: !!o.isDemo,
       sentenceTranslation: String(o.translation),

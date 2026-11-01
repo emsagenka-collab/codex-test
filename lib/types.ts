@@ -11,6 +11,14 @@ export type Entry = {
   translation: string;
   context: string;
 };
+export type SourcePage = {
+  pageNumber: number;
+  text: string;
+};
+export type ExtractedDocument = {
+  text: string;
+  pages: SourcePage[];
+};
 export type Word = Entry & {
   id: number;
   sentence: string;
@@ -20,6 +28,8 @@ export type Word = Entry & {
   originalSection: string | null;
   section: string;
   sectionNumber: number;
+  pageNumber: number | null;
+  pageEnd: number | null;
   source: string;
   demoBook: boolean;
   sentenceTranslation: string;

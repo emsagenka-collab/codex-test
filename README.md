@@ -33,6 +33,16 @@ Die App ist für eine einzelne Person auf einer lokalen/vertrauten Maschine ausg
 
 Sind weniger ungesehene passende Wörter als gewünscht vorhanden, zeigt die App die verfügbaren Wörter und einen Hinweis an. Weiterer Import kann eine unvollständige Tageslektion auffüllen. Beim Senken des Ziels bleiben entfernte, noch unbewertete Wörter für spätere Tage verfügbar. Bestehende Zwei-Wort-Lektionen und Einstellungen werden beim Update automatisch übernommen. „Bereits bekannt“ ist in den Details der Wortübersicht verfügbar.
 
+## PDF-Seitenangaben
+
+Bei PDF-Importen wird die tatsächliche PDF-Seite neben dem Abschnitt angezeigt.
+Bei Sätzen über einen Seitenwechsel hinweg erscheint ein Bereich.
+Die PDF-Seite kann von der gedruckten Buchseitenzahl abweichen; Buchseiten werden
+nicht aus Abschnittsnummern geschätzt. TXT und EPUB besitzen keine festen
+PDF-Seiten. Frühere PDF-Importe müssen für Seitenangaben erneut importiert werden;
+Bewertungen und freigeschaltete Wörter bleiben dabei erhalten. Zeilennummern
+werden nicht angezeigt, weil Zeilenumbrüche von der Extraktion abhängen.
+
 ## Import & optionale KI
 
 Unterstützt werden UTF-8-TXT/Markdown, **PDFs mit Textebene** und unverschlüsselte EPUBs in Spine-Lesereihenfolge, maximal 15 MB und 3 Millionen extrahierte Zeichen. PDF maximal 1.000 Seiten, EPUB maximal 1.000 Kapitel. Gescanntes PDF benötigt vorher OCR; DRM wird nicht umgangen. Bitte nur eigene oder berechtigt nutzbare Texte importieren.

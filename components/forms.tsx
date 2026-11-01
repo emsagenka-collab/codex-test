@@ -267,7 +267,7 @@ export function SettingsForm({
         {aiAvailable
           ? "eingerichtet · beim Import optional aktivierbar"
           : "nicht eingerichtet · die App funktioniert auch offline mit ihrem Wörterbuch"}
-        . Einrichtung in der README.
+        .
       </p>
       <button
         type="button"

@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
 import "./globals.css";
 export const metadata: Metadata = {
-  title: "Kelime · Zwei Wörter. Jeden Tag.",
+  title: "Kelime Hazinesi · Her gün biraz daha.",
   description:
     "Türkische Wörter entdecken, im Kontext verstehen und langfristig behalten. Deine ruhige Lernbibliothek.",
-  applicationName: "Kelime",
+  applicationName: "Kelime Hazinesi",
   authors: [{ name: "Ömer Faruk Takkaç" }],
   creator: "Ömer Faruk Takkaç",
 };

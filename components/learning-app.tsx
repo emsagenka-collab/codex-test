@@ -171,7 +171,11 @@ export default function LearningApp() {
             <BookOpen size={25} />
           </span>
           <span>
-            kelime<span className="brand-dot">.</span>
+            <span className="brand-name" lang="tr">
+              Kelime
+              <br />
+              Hazinesi<span className="brand-dot">.</span>
+            </span>
             <small>HER GÜN BİRAZ DAHA</small>
           </span>
         </a>
@@ -220,7 +224,11 @@ export default function LearningApp() {
       <div className="workspace">
         <header className="topbar">
           <div className="mobile-brand">
-            <BookOpen size={21} /> kelime.
+            <BookOpen size={21} />
+            <span lang="tr">
+              Kelime Hazinesi<span className="brand-dot">.</span>
+              <small>HER GÜN BİRAZ DAHA</small>
+            </span>
           </div>
           <span className="breadcrumb">
             Deine kleine Lernbibliothek <span>/</span>{" "}
@@ -787,7 +795,7 @@ export default function LearningApp() {
               )}
               <footer className="page-footer">
                 <span className="mini-brand">
-                  <Leaf size={13} /> kelime.
+                  <Leaf size={13} /> Kelime Hazinesi.
                 </span>
                 <span>
                   Az ama öz.{" "}

@@ -118,16 +118,21 @@ small {
 .brand {
   display: flex;
   align-items: center;
-  gap: 13px;
-  margin: 0 12px 58px;
+  gap: 10px;
+  margin: 0 0 46px;
   font-family: Georgia, serif;
-  font-size: 37px;
-  letter-spacing: -1.5px;
+  font-size: 28px;
+  letter-spacing: -0.8px;
   line-height: 1;
 }
+.brand-name {
+  display: block;
+  line-height: 1.05;
+}
 .brand-symbol {
-  width: 43px;
-  height: 49px;
+  flex-shrink: 0;
+  width: 38px;
+  height: 46px;
   display: grid;
   place-items: center;
   background: var(--green);
@@ -1259,9 +1264,35 @@ details[open] > summary > svg {
   background: var(--paper);
   box-shadow: 0 30px 100px #101c2229;
 }
+.modal[open] {
+  animation: modal-enter 280ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
 .modal::backdrop {
   background: #202b295e;
   backdrop-filter: blur(4px);
+}
+.modal[open]::backdrop {
+  animation: modal-backdrop-enter 280ms ease-out both;
+}
+@keyframes modal-enter {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+@keyframes modal-backdrop-enter {
+  from {
+    background: #202b2900;
+    backdrop-filter: blur(0);
+  }
+  to {
+    background: #202b295e;
+    backdrop-filter: blur(4px);
+  }
 }
 .modal-inner {
   padding: 29px;
@@ -1532,8 +1563,7 @@ details[open] > summary > svg {
     padding: 0 30px;
   }
   .brand {
-    font-size: 33px;
-    margin-left: 8px;
+    font-size: 27px;
   }
   .nav-item {
     padding: 14px 11px;
@@ -1577,9 +1607,18 @@ details[open] > summary > svg {
     align-items: center;
     gap: 8px;
     font:
-      26px Georgia,
+      22px Georgia,
       serif;
     color: var(--green);
+  }
+  .mobile-brand small {
+    display: block;
+    margin-top: 4px;
+    font:
+      7px "DM Sans",
+      sans-serif;
+    letter-spacing: 1.7px;
+    color: var(--muted);
   }
   .breadcrumb {
     display: none;
@@ -2012,5 +2051,11 @@ details[open] > summary > svg {
     width: 100%;
     font-size: 10px;
     margin-top: 5px;
+  }
+}
+
+@media (max-width: 480px) {
+  .topbar .private-label {
+    display: none;
   }
 }

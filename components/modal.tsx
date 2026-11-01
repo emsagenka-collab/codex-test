@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useRef } from "react";
+import { useEffect, useId, useRef } from "react";
 import { X } from "lucide-react";
 export default function Modal({
   title,
@@ -11,6 +11,7 @@ export default function Modal({
   children: React.ReactNode;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
+  const titleId = useId();
   useEffect(() => {
     ref.current?.showModal();
     const old = document.body.style.overflow;
@@ -23,6 +24,7 @@ export default function Modal({
     <dialog
       ref={ref}
       className="modal"
+      aria-labelledby={titleId}
       onCancel={(e) => {
         e.preventDefault();
         onClose();
@@ -34,8 +36,8 @@ export default function Modal({
       <div className="modal-inner">
         <header>
           <div>
-            <div className="eyebrow">KELİME · DEIN LERNBEGLEITER</div>
-            <h2>{title}</h2>
+            <div className="eyebrow">KELİME HAZİNESİ · DEIN LERNBEGLEITER</div>
+            <h2 id={titleId}>{title}</h2>
           </div>
           <button
             className="icon-button"

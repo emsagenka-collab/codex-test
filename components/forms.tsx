@@ -115,9 +115,10 @@ export function ImportForm({
       )}
       {data?.book && (
         <p className="muted">
-          Deine bisherigen Wörter und Bewertungen bleiben erhalten. Noch
-          fehlende Tageswörter werden ergänzt. Für PDF-Seitenangaben bei älteren
-          Importen bitte das Buch erneut importieren.
+          Deine bisherigen Wörter und Bewertungen bleiben erhalten. Für das neue
+          Buch startet eine eigene Tagesauswahl auf deinem Niveau. Für
+          PDF-Seitenangaben bei älteren Importen bitte das Buch erneut
+          importieren.
         </p>
       )}
       <button className="primary wide" disabled={!file || busy} type="submit">
@@ -194,8 +195,10 @@ export function SettingsForm({
       </label>
       <p className="muted" id="daily-word-count-help">
         1–100 Wörter pro Tag. Gilt direkt nach dem Speichern. Bereits bewertete
-        Tageswörter bleiben erhalten. Sind weniger neue Wörter verfügbar, zeigen
-        wir dir die vorhandenen.
+        Tageswörter bleiben erhalten. Noch nicht bewertete Wörter früherer
+        Tagesauswahlen werden wieder angeboten. Die Auswahl bleibt auf deinem
+        Niveau. Ist dessen Buchauswahl bearbeitet, kannst du aufsteigen, ein
+        anderes Buch importieren oder weiter wiederholen.
       </p>
       <label className="setting-field">
         Dein Türkisch-Niveau
@@ -260,8 +263,9 @@ export function SettingsForm({
         Prüfung läuft im Hintergrund. Originalzitate bleiben erhalten.
       </p>
       <p className="muted">
-        Niveauänderungen gelten für die nächste Tagesauswahl. Bereits bekannte
-        Wörter kannst du in der Wortübersicht öffnen und als bekannt markieren.
+        Ein Niveauwechsel startet sofort eine Auswahl der neuen Stufe. Deine
+        bisherigen Bewertungen bleiben erhalten. Bereits bekannte Wörter kannst
+        du in der Wortübersicht als bekannt markieren.
       </p>
       <button type="submit" disabled={busy} className="primary wide">
         {busy ? (

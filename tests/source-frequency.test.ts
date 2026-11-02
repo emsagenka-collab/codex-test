@@ -73,9 +73,9 @@ test("35 book mentions stay 35 despite a sparse old sentence index; examples rec
       1,
     );
     const progress = JSON.stringify(before.progress);
-    const daily = JSON.stringify(before.daily);
+
     const current = state();
-    const word = current.daily.find((word) => word.id === tefekkur.id)!;
+    const word = current.vocabulary.find((word) => word.id === tefekkur.id)!;
     assert.equal(word.frequency, 35);
     assert.equal(word.examples.length, 30);
     assert.equal(word.demoBook, false);
@@ -108,11 +108,13 @@ test("35 book mentions stay 35 despite a sparse old sentence index; examples rec
     );
     assert.equal(word.rating, "hard");
     assert.equal(JSON.stringify(exportData().progress), progress);
-    assert.equal(JSON.stringify(exportData().daily), daily);
+    assert.ok(current.daily.every((word) => !word.demoBook));
+    const daily = JSON.stringify(exportData().daily);
     assert.deepEqual(
-      state().daily.find((word) => word.id === tefekkur.id)!.examples,
+      state().vocabulary.find((word) => word.id === tefekkur.id)!.examples,
       word.examples,
     );
+    assert.equal(JSON.stringify(exportData().daily), daily);
     const emanet = current.vocabulary.find((word) => word.word === "emanet")!;
     assert.equal(emanet.frequency, 0);
     assert.deepEqual(emanet.examples, []);

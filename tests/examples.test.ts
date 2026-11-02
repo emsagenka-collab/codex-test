@@ -70,7 +70,7 @@ test("word examples are distinct valid source sentences with matching locations 
     assert.equal("excludedPages" in state().book!, false);
 
     importBook("Anderes Buch", "Emaneti korumak için metanet gösterdi.");
-    word = state().daily[0];
+    word = state().vocabulary.find((current) => current.id === word.id)!;
     assert.equal(word.examples.length, 1);
     assert.ok(
       word.examples.every((example) => example.source === "Anderes Buch"),

@@ -1,3 +1,4 @@
+import { detectRunningHeaders } from "./running-headers";
 import { indexBookSource, type SourceExample } from "./book-source";
 import { exampleSentences } from "./example-sentences";
 import { DatabaseSync } from "node:sqlite";
@@ -70,7 +71,7 @@ export function db() {
  CREATE TABLE IF NOT EXISTS VocabularyWord (id INTEGER PRIMARY KEY, word TEXT NOT NULL, normalizedWord TEXT NOT NULL UNIQUE, data TEXT NOT NULL);
  CREATE TABLE IF NOT EXISTS WordOccurrence (id INTEGER PRIMARY KEY, wordId INTEGER REFERENCES VocabularyWord(id), sectionId INTEGER REFERENCES TextSection(id), sentence TEXT NOT NULL, surroundingText TEXT NOT NULL, translation TEXT NOT NULL DEFAULT '', context TEXT NOT NULL DEFAULT '', pageNumber INTEGER, pageEnd INTEGER);
  CREATE TABLE IF NOT EXISTS LearningProgress (id INTEGER PRIMARY KEY, userId INTEGER REFERENCES User(id), wordId INTEGER REFERENCES VocabularyWord(id), status TEXT NOT NULL DEFAULT 'new', firstSeen TEXT, lastReviewed TEXT, nextReview TEXT, reviewCount INTEGER NOT NULL DEFAULT 0, difficultyRating TEXT, UNIQUE(userId,wordId));
- CREATE TABLE IF NOT EXISTS DailyWords (date TEXT PRIMARY KEY, word1 INTEGER REFERENCES VocabularyWord(id), word2 INTEGER REFERENCES VocabularyWord(id), wordIds TEXT NOT NULL DEFAULT '[]');
+ CREATE TABLE IF NOT EXISTS DailyWords (date TEXT PRIMARY KEY, word1 INTEGER REFERENCES VocabularyWord(id), word2 INTEGER REFERENCES VocabularyWord(id), wordIds TEXT NOT NULL DEFAULT '[]', scope TEXT NOT NULL DEFAULT '');
  CREATE TABLE IF NOT EXISTS Activity (day TEXT NOT NULL, wordId INTEGER REFERENCES VocabularyWord(id), UNIQUE(day,wordId));
  CREATE TABLE IF NOT EXISTS AppMeta (key TEXT PRIMARY KEY, value TEXT NOT NULL);`);
   const occurrenceColumns = connection
@@ -107,6 +108,15 @@ export function db() {
       throw e;
     }
   }
+  if (
+    !connection
+      .prepare("PRAGMA table_info(DailyWords)")
+      .all()
+      .some((column) => column.name === "scope")
+  )
+    connection.exec(
+      "ALTER TABLE DailyWords ADD COLUMN scope TEXT NOT NULL DEFAULT ''",
+    );
   connection.prepare("INSERT OR IGNORE INTO User VALUES (1,?)").run(
     JSON.stringify({
       dailyWordCount: 2,
@@ -164,6 +174,7 @@ export function importBook(
   pages: SourcePage[] = [],
 ) {
   const legacy = !isDemo && hasLegacyTurkishGlyphs(text);
+  const headers = detectRunningHeaders(text, legacy);
   const sections = splitSections(text);
   if (!sections.length)
     throw new Error(
@@ -187,7 +198,7 @@ export function importBook(
     if (start < 0) throw new Error("Quellenprüfung fehlgeschlagen.");
     sectionOffset = start + section.length;
     let sentenceOffset = 0;
-    return exampleSentences(section, legacy).map((sentence) => {
+    return exampleSentences(section, legacy, headers).map((sentence) => {
       const sentenceStart = section.indexOf(sentence, sentenceOffset);
       sentenceOffset = sentenceStart + sentence.length;
       const startOffset = start + sentenceStart;
@@ -196,6 +207,7 @@ export function importBook(
         section,
         i,
         sentence,
+        repairedSentence: repairTurkishText(sentence, legacy),
         pageNumber:
           pageRanges.find(
             (page) => page.start <= startOffset && startOffset < page.end,
@@ -217,7 +229,7 @@ export function importBook(
     .map((entry) => ({
       entry,
       occurrences: locatedSentences.filter((occ) =>
-        containsWord(repairTurkishText(occ.sentence, legacy), entry.word),
+        containsWord(occ.repairedSentence, entry.word),
       ),
     }))
     .filter((x) => x.occurrences.length);
@@ -267,14 +279,12 @@ export function importBook(
             occ.section,
             isDemo
               ? lexicon.find((e) => e.demo === occ.sentence)?.translation || ""
-              : extra.includes(entry) &&
-                  entry.demo === repairTurkishText(occ.sentence, legacy)
+              : extra.includes(entry) && entry.demo === occ.repairedSentence
                 ? entry.translation
                 : "",
             isDemo
               ? lexicon.find((e) => e.demo === occ.sentence)?.context || ""
-              : extra.includes(entry) &&
-                  entry.demo === repairTurkishText(occ.sentence, legacy)
+              : extra.includes(entry) && entry.demo === occ.repairedSentence
                 ? entry.context
                 : "",
             occ.pageNumber,
@@ -315,8 +325,28 @@ function vocabulary(): Word[] {
   const active = Number(book.id);
   const source = sourceBook(active);
   const legacy = !book.isDemo && legacyBook(active);
+  // Repair sparse older imports from the raw source and the bundled dictionary.
+  // This creates only attested words with suitable examples, never guessed entries.
+  for (const entry of lexicon) {
+    const found = source.forWord(entry.word);
+    if (!found.frequency || !found.examples.length) continue;
+    db()
+      .prepare(
+        "INSERT OR IGNORE INTO VocabularyWord(word,normalizedWord,data) VALUES (?,?,?)",
+      )
+      .run(entry.word, normalize(entry.word), JSON.stringify(entry));
+    const row = one(
+      "SELECT id FROM VocabularyWord WHERE normalizedWord=?",
+      normalize(entry.word),
+    );
+    db()
+      .prepare(
+        "INSERT OR IGNORE INTO LearningProgress(userId,wordId) VALUES (1,?)",
+      )
+      .run(Number(row.id));
+  }
   return all(
-    `SELECT v.id,v.data,p.*,v.id AS vocabularyId FROM VocabularyWord v JOIN LearningProgress p ON p.wordId=v.id WHERE EXISTS (SELECT 1 FROM WordOccurrence WHERE wordId=v.id)`,
+    `SELECT v.id,v.data,p.*,v.id AS vocabularyId FROM VocabularyWord v JOIN LearningProgress p ON p.wordId=v.id`,
   ).map((row) => {
     const entry = JSON.parse(String(row.data)) as Entry;
     const found = source.forWord(entry.word);
@@ -438,25 +468,39 @@ export function state(): State {
   db().exec("BEGIN IMMEDIATE");
   try {
     vocab = vocabulary();
+    const level = config.level === "B1" ? 1 : config.level === "C1" ? 3 : 2;
+    const activeBook = Number(
+      one("SELECT value FROM AppMeta WHERE key='activeBook'")?.value || 0,
+    );
+    const scope = `${activeBook}:${config.level}`;
     const daily = one("SELECT * FROM DailyWords WHERE date=?", today);
-    const previousIds: number[] = daily
-      ? JSON.parse(String(daily.wordIds))
-      : [];
+    const sameScope = !daily?.scope || daily.scope === scope;
+    const previousIds: number[] =
+      daily && sameScope ? JSON.parse(String(daily.wordIds)) : [];
     const previousWords = previousIds
       .map((id) => vocab.find((w) => w.id === id))
-      .filter((w): w is Word => !!w);
+      .filter(
+        (w): w is Word =>
+          !!w &&
+          w.difficulty === level &&
+          w.frequency > 0 &&
+          w.examples.length > 0,
+      );
     // A smaller goal never removes a word already rated today.
     const reviewed = previousWords.filter((w) => w.lastReviewed === today);
     let remaining = Math.max(0, config.dailyWordCount - reviewed.length);
     const selected = previousWords.filter(
       (w) => w.lastReviewed === today || remaining-- > 0,
     );
-    const level = config.level === "B1" ? 1 : config.level === "C1" ? 3 : 2;
     const candidates = vocab
       .filter(
         (w) =>
-          !w.firstSeen &&
+          // firstSeen means shown/allocated, not learned. Never strand unrated
+          // words just because an earlier daily selection already exposed them.
+          w.reviewCount === 0 &&
+          !w.lastReviewed &&
           w.status === "new" &&
+          w.difficulty === level &&
           w.frequency > 0 &&
           w.examples.length > 0 &&
           !previousIds.includes(w.id),
@@ -474,16 +518,20 @@ export function state(): State {
         .slice(0, Math.max(0, config.dailyWordCount - selected.length))
         .map((w) => w.id),
     ];
-    if (JSON.stringify(dailyIds) !== JSON.stringify(previousIds)) {
+    if (
+      JSON.stringify(dailyIds) !== JSON.stringify(previousIds) ||
+      daily?.scope !== scope
+    ) {
       db()
         .prepare(
-          "INSERT INTO DailyWords(date,word1,word2,wordIds) VALUES (?,?,?,?) ON CONFLICT(date) DO UPDATE SET word1=excluded.word1,word2=excluded.word2,wordIds=excluded.wordIds",
+          "INSERT INTO DailyWords(date,word1,word2,wordIds,scope) VALUES (?,?,?,?,?) ON CONFLICT(date) DO UPDATE SET word1=excluded.word1,word2=excluded.word2,wordIds=excluded.wordIds,scope=excluded.scope",
         )
         .run(
           today,
           dailyIds[0] ?? null,
           dailyIds[1] ?? null,
           JSON.stringify(dailyIds),
+          scope,
         );
       // Unrated words removed from today's lesson remain available on future days.
       for (const id of previousIds.filter((id) => !dailyIds.includes(id)))
@@ -519,8 +567,29 @@ export function state(): State {
   const bookRow = one(
     "SELECT b.* FROM Book b JOIN AppMeta m ON m.value=CAST(b.id AS TEXT) WHERE m.key='activeBook'",
   );
+  const targetDifficulty =
+    config.level === "B1" ? 1 : config.level === "C1" ? 3 : 2;
+  const levelWords = vocab.filter(
+    (word) =>
+      word.difficulty === targetDifficulty &&
+      word.frequency > 0 &&
+      word.examples.length > 0,
+  );
+  const remaining = levelWords.filter(
+    (word) =>
+      word.status === "new" && word.reviewCount === 0 && !word.lastReviewed,
+  ).length;
   return {
     today,
+    levelProgress: {
+      level: config.level,
+      total: levelWords.length,
+      remaining,
+      processed: levelWords.length - remaining,
+      completed: levelWords.length > 0 && remaining === 0,
+      nextLevel:
+        config.level === "B1" ? "B2" : config.level === "B2" ? "C1" : null,
+    },
     daily: dailyIds
       .map((id) => vocab.find((w) => w.id === id)!)
       .filter(Boolean),

@@ -24,14 +24,27 @@ Die App ist für eine einzelne Person auf einer lokalen/vertrauten Maschine ausg
 
 ## Was funktioniert
 
-- 1–100 einstellbare neue Tageswörter (standardmäßig 2) je Kalendertag der eingestellten Zeitzone (standardmäßig Berlin). Die Auswahl bleibt bei Neuladen und Niveauänderung bestehen. Änderungen der Wörterzahl gelten sofort; bereits bewertete Tageswörter bleiben auch bei einem niedrigeren Ziel erhalten. Verpasste Tage werden nicht nachgeholt.
-- Auswahl nach Häufigkeit und Nähe zum gewählten Niveau. Das Offline-Wörterbuch enthält 24 bewusst ausgewählte, gehobene Begriffe statt Eigennamen oder Funktionswörter. Einfache Beugungen und häufige Stamm-Lautwechsel werden erkannt; dies ist keine vollständige türkische Morphologieanalyse.
+- 1–100 einstellbare neue Tageswörter (standardmäßig 2) je Kalendertag der eingestellten Zeitzone (standardmäßig Berlin). Die Auswahl bleibt beim Neuladen bestehen. Buch- und Niveauwechsel starten sofort eine passende eigene Auswahl; bisherige Bewertungen bleiben erhalten. Änderungen der Wörterzahl gelten sofort; bereits bewertete Tageswörter bleiben auch bei einem niedrigeren Ziel erhalten. Verpasste Tage werden nicht nachgeholt.
+- Auswahl nach Häufigkeit innerhalb der gewählten Stufe (B1, B2 oder C1). Das Offline-Wörterbuch enthält 24 bewusst ausgewählte, gehobene Begriffe statt Eigennamen oder Funktionswörter. Einfache Beugungen und häufige Stamm-Lautwechsel werden erkannt; dies ist keine vollständige türkische Morphologieanalyse.
 - Originalsatz, Hervorhebung, Quelle, Abschnitt, Wortwissen und aufklappbarer Kontext. Jeder ausgewählte Satz wird gegen den tatsächlich importierten Text geprüft. Alle Vorkommen bleiben in SQLite erhalten.
 - Bewertungen, Wiederholungsplanung, umdrehbare Wiederholungskarten, Wortsuche und Statusfilter; fällige Wiederholungen sind zusätzlich zu den neuen Tageswörtern verfügbar.
 - Fortschritt, Lernserie, Niveau, große Schrift, heller/dunkler/System-Modus, türkische Sprachausgabe über die auf dem Gerät verfügbaren Browserstimmen.
 - JSON-Datenexport und ausdrücklich bestätigtes Löschen aller Lerndaten. Beim Import weiterer Bücher bleiben bisherige Wörter und Lernstände erhalten.
 
-Sind weniger ungesehene passende Wörter als gewünscht vorhanden, zeigt die App die verfügbaren Wörter und einen Hinweis an. Weiterer Import kann eine unvollständige Tageslektion auffüllen. Beim Senken des Ziels bleiben entfernte, noch unbewertete Wörter für spätere Tage verfügbar. Bestehende Zwei-Wort-Lektionen und Einstellungen werden beim Update automatisch übernommen. „Bereits bekannt“ ist in den Details der Wortübersicht verfügbar.
+Noch nie bewertete Wörter bleiben als neue Lernwörter verfügbar, auch wenn sie
+schon in einer früheren Tagesauswahl angezeigt wurden. Ältere unvollständige
+Import-Indizes werden aus dem gespeicherten Rohtext und dem vorhandenen
+Wörterbuch ergänzt. Sind in der gewählten Stufe weniger passende Wörter als
+gewünscht vorhanden, zeigt die App die verfügbaren und einen Hinweis.
+
+Wenn alle verfügbaren Lernwörter einer Stufe im aktuellen Buch erstmals
+bearbeitet wurden, zeigt die App einen motivierenden Abschluss mit drei Wegen:
+zur nächsten Stufe wechseln (B1 → B2 → C1), ein anderes Buch mit gleicher Stufe
+importieren oder freiwillig wiederholen. C1 ist die höchste angebotene Stufe.
+Das bedeutet den Abschluss dieser erkannten Buchauswahl, keine allgemeine
+CEFR-Zertifizierung. Bei null passenden Wörtern erscheint ein neutraler Hinweis
+statt einer unberechtigten Glückwunschmeldung. Wiederholungen werden nicht
+ungefragt in die neuen Tageswörter gemischt.
 
 ## Beispielsätze aus dem Fließtext
 
@@ -52,6 +65,10 @@ und Nennungen außerhalb des Fließtexts. Die Zahl geeigneter, unterschiedlicher
 Beispielsätze ist davon unabhängig. Beispiele werden aus dem gespeicherten
 Originaltext ermittelt, auch wenn ältere Satzindizes unvollständig sind.
 Bei einem importierten Buch wird nicht auf Demotext oder andere Bücher ausgewichen.
+Wiederkehrende Seitenköpfe werden anhand mehrerer nummerierter Vorkommen erkannt,
+bei der Satzanalyse ausgeblendet und aus der Anzeige entfernt; die Rohtextspanne
+bleibt unverändert. Dadurch bleiben auch Sätze über Seitenwechsel hinweg
+verwendbar. Blocksatz mit Tabulatoren ist allein kein Tabellenbeweis.
 Neue Importe behalten auch kurze Quellabsätze für die Zählung.
 Wiederhergestellte alte Sätze bekommen nur dann PDF-Seiten, wenn diese sicher
 zugeordnet werden können; fehlende Seiten lassen sich durch erneuten Import erfassen.

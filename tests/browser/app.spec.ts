@@ -148,6 +148,7 @@ test("mobile import, daily lesson, persistence and all navigation", async ({
     0,
   );
   await expect(page.getByText("Ersteller:")).toContainText("Ömer Faruk Takkaç");
+  await request.post("/api/reset", { data: { confirm: "DELETE" } });
   const rawText =
     "Emaneti do€ru korumay› ve komflularla paylaflmay› ö€rendi.\n\nTefekkür ederken haklar›n› düflündü.";
   const legacy = await request.post("/api/import", {
@@ -167,7 +168,12 @@ test("mobile import, daily lesson, persistence and all navigation", async ({
   ).toContain("do€ru");
   await page.reload();
   await expect(
-    page.locator("article").first().locator(".example-current>blockquote"),
+    page
+      .locator("article.word-card")
+      .filter({
+        has: page.getByRole("heading", { name: "emanet", exact: true }),
+      })
+      .locator(".example-current>blockquote"),
   ).toContainText("doğru korumayı ve komşularla paylaşmayı öğrendi");
   await expect(page.getByText("PDF-Text berichtigt")).toHaveCount(0);
   await expect(page.locator(".source-repair")).toHaveCount(0);
@@ -186,7 +192,9 @@ test("mobile import, daily lesson, persistence and all navigation", async ({
   });
   expect((await spellingImport.json()).ok).toBe(true);
   await page.reload();
-  const firstCard = page.locator("article").first();
+  const firstCard = page.locator("article.word-card").filter({
+    has: page.getByRole("heading", { name: "emanet", exact: true }),
+  });
   await expect(page.locator(".orthography-panel")).toHaveCount(0);
   await expect(
     page.getByText("Türkische Schreibprüfung", { exact: false }),
@@ -223,7 +231,12 @@ test("mobile import, daily lesson, persistence and all navigation", async ({
   ).toContain("Tefekkür");
   await page.reload();
   await expect(
-    page.locator("article").first().locator(".example-current>blockquote"),
+    page
+      .locator("article.word-card")
+      .filter({
+        has: page.getByRole("heading", { name: "emanet", exact: true }),
+      })
+      .locator(".example-current>blockquote"),
   ).toContainText("Peygamberimiz’in");
   await expect(page.getByText("PDF-Text berichtigt")).toHaveCount(0);
   await expect(page.locator(".source-repair")).toHaveCount(0);
@@ -392,4 +405,90 @@ test("sentence carousel changes examples and PDF pages, keeps ratings and suppor
     path: "/tmp/kelime-carousel-desktop.png",
     fullPage: true,
   });
+});
+
+test("daily goals resize immediately and completed levels offer advance, another book and review", async ({
+  page,
+  request,
+}) => {
+  await request.post("/api/reset", { data: { confirm: "DELETE" } });
+  await request.post("/api/settings", {
+    data: { dailyWordCount: 4, level: "B2" },
+  });
+  const text =
+    "Emaneti iyi korudu.\n\nMetanet gösterdi.\n\nTefekkür ederken düşündü.\n\nSükûnetini korudu.\n\nHidayet için dua etti.";
+  const imported = await request.post("/api/import", {
+    multipart: {
+      file: {
+        name: "stufen.txt",
+        mimeType: "text/plain",
+        buffer: Buffer.from(text),
+      },
+    },
+  });
+  expect(await imported.json()).toHaveProperty("ok", true);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/");
+  await expect(page.locator("article.word-card")).toHaveCount(4);
+  await expect(page.locator(".level-completion")).toHaveCount(0);
+  await page.getByRole("button", { name: "Einstellungen öffnen" }).click();
+  await page
+    .getByRole("spinbutton", { name: "Tägliche neue Wörter" })
+    .fill("3");
+  await page.getByRole("button", { name: "Einstellungen speichern" }).click();
+  await expect(page.locator("article.word-card")).toHaveCount(3);
+  await page.getByRole("button", { name: "Einstellungen öffnen" }).click();
+  await page
+    .getByRole("spinbutton", { name: "Tägliche neue Wörter" })
+    .fill("4");
+  await page.getByRole("button", { name: "Einstellungen speichern" }).click();
+  await expect(page.locator("article.word-card")).toHaveCount(4);
+  for (const card of await page.locator("article.word-card").all())
+    await card.getByRole("button", { name: "Verstanden", exact: true }).click();
+  const completion = page.locator(".level-completion");
+  await expect(completion.getByRole("heading")).toContainText(
+    "Herzlichen Glückwunsch",
+  );
+  await expect(completion.getByRole("button")).toHaveCount(3);
+  await page.setViewportSize({ width: 320, height: 740 });
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= window.innerWidth,
+    ),
+  ).toBe(true);
+  await page.screenshot({
+    path: "/tmp/kelime-level-complete-mobile.png",
+    fullPage: true,
+  });
+  await completion.getByRole("button", { name: /Auf C1 wechseln/ }).click();
+  await expect(page.locator("article.word-card")).toHaveCount(1);
+  await expect(page.locator(".word-title h2")).toHaveText("hidayet");
+  const afterAdvance = await (await request.get("/api/state")).json();
+  expect(afterAdvance.settings.level).toBe("C1");
+  expect(
+    afterAdvance.vocabulary.filter(
+      (word: { difficulty: number; reviewCount: number }) =>
+        word.difficulty === 2 && word.reviewCount === 1,
+    ),
+  ).toHaveLength(4);
+  await page.getByRole("button", { name: "Verstanden", exact: true }).click();
+  await expect(
+    completion.getByRole("button", { name: /Höchste Stufe erreicht/ }),
+  ).toBeDisabled();
+  await page.getByRole("button", { name: "Einstellungen öffnen" }).click();
+  await page.getByLabel("Dein Türkisch-Niveau").selectOption("B2");
+  await page.getByRole("button", { name: "Einstellungen speichern" }).click();
+  await expect(page.locator("article.word-card")).toHaveCount(0);
+  await expect(completion.getByRole("heading")).toContainText("B2");
+  await completion
+    .getByRole("button", { name: /Mit anderem Buch weiterlernen/ })
+    .click();
+  await expect(
+    page.getByRole("dialog").getByLabel("Dein Türkisch-Niveau"),
+  ).toHaveValue("B2");
+  await page.getByRole("button", { name: "Dialog schließen" }).click();
+  await completion.getByRole("button", { name: /Weiter wiederholen/ }).click();
+  await expect(
+    page.getByRole("button", { name: "Bedeutung aufdecken" }),
+  ).toBeVisible();
 });

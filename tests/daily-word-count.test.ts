@@ -71,7 +71,7 @@ test("daily word goals migrate old data, resize safely, persist and handle limit
       state().daily.map((w) => w.id),
       expandedIds,
     );
-    saveSettings({ theme: "dark", level: "C1" });
+    saveSettings({ theme: "dark" });
     assert.equal(settings().dailyWordCount, 5);
     assert.deepEqual(
       state().daily.map((w) => w.id),
@@ -99,8 +99,8 @@ test("daily word goals migrate old data, resize safely, persist and handle limit
 
     saveSettings({ dailyWordCount: 100 });
     const available = state();
-    assert.equal(available.daily.length, 24);
-    assert.equal(new Set(available.daily.map((w) => w.id)).size, 24);
+    assert.equal(available.daily.length, 13);
+    assert.equal(new Set(available.daily.map((w) => w.id)).size, 13);
     assert.equal(exportData().settings.dailyWordCount, 100);
 
     saveSettings({ dailyWordCount: 1 });
@@ -124,8 +124,9 @@ test("daily word goals migrate old data, resize safely, persist and handle limit
     assert.equal(partial.settings.dailyWordCount, 100);
     importBook("Weiteres Wort", "Tefekkür ederken bekledi.");
     const toppedUp = state();
-    assert.equal(toppedUp.daily.length, 2);
-    assert.equal(toppedUp.daily[0].id, partial.daily[0].id);
+    assert.equal(toppedUp.daily.length, 1);
+    assert.equal(toppedUp.daily[0].word, "tefekkür");
+    assert.ok(toppedUp.daily.every((word) => word.source === "Weiteres Wort"));
     assert.deepEqual(
       state().daily.map((w) => w.id),
       toppedUp.daily.map((w) => w.id),

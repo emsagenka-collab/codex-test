@@ -1,3 +1,4 @@
+import { isRunningHeader, maskRunningHeaders } from "./running-headers";
 import { repairTurkishText, hasLegacyTurkishGlyphs } from "./text-repair";
 import { sentences, tokens } from "./learning";
 
@@ -37,6 +38,12 @@ function contentStart(text: string) {
 }
 export function isListLine(text: string) {
   const line = contentStart(text);
+  // A speech dash followed by an explicit reporting verb is dialogue, not a list.
+  if (
+    /^[–—-]\s+\p{L}/u.test(line) &&
+    /(?:^|\s)(?:dedi|diyor|buyurdu|sordu|söyledi)[,;:.!?]?(?:\s|$)/u.test(line)
+  )
+    return false;
   return (
     /^(?:\d+\s+)?(?:\(?[a-zçğıöşü][.)]{1,2}|\(?\d+(?:\.\d+)*[.)\-–:]|[IVXLCDM]+[.)\-–:]|[›»>→➜➤‣∙·●○◦◆◇▪▫*+•–—-]+(?:\s*[.)])?)\s*\S/iu.test(
       line,
@@ -69,9 +76,7 @@ function isTableLine(text: string) {
     /^\d+(?:[.,:/–-]\d+)*[.)]?$/u.test(cell),
   );
   const columnLabel = /^(?:olay|tarih|yıl|yer|sayı|açıklama)$/iu.test(cells[0]);
-  return (
-    numericCell || columnLabel || (cells.length >= 3 && !hasPredicate(text))
-  );
+  return numericCell || columnLabel;
 }
 function isHeadingOrIndex(text: string) {
   const line = contentStart(text);
@@ -106,6 +111,7 @@ function isCompleteExample(text: string) {
 export function exampleSentences(
   section: string,
   legacy = hasLegacyTurkishGlyphs(section),
+  headers = new Set<string>(),
 ): string[] {
   if (isContentsText(repairTurkishText(section, legacy))) return [];
   const result: string[] = [];
@@ -115,16 +121,26 @@ export function exampleSentences(
     let paragraph: string[] = [];
     let inList = false;
     function flush() {
-      if (paragraph.length)
-        result.push(
-          ...sentences(paragraph.join("\n")).filter((sentence) =>
-            isCompleteExample(repairTurkishText(sentence, legacy)),
-          ),
-        );
+      const raw = paragraph.join("\n");
+      const masked = maskRunningHeaders(raw, headers, legacy);
+      let cursor = 0;
+      for (const sentence of sentences(masked)) {
+        const start = masked.indexOf(sentence, cursor);
+        cursor = start + sentence.length;
+        if (
+          start >= 0 &&
+          isCompleteExample(repairTurkishText(sentence, legacy))
+        )
+          result.push(raw.slice(start, cursor));
+      }
       paragraph = [];
     }
     for (const line of lines) {
       const analysis = repairTurkishText(line, legacy);
+      if (isRunningHeader(line, headers, legacy)) {
+        paragraph.push(line);
+        continue;
+      }
       if (isTableLine(analysis)) {
         flush();
         inTable = true;
@@ -137,8 +153,14 @@ export function exampleSentences(
         // A chapter heading may immediately precede a wrapped prose paragraph.
         // List items, in contrast, also exclude their continuation lines.
         inList = !(
-          /^(?:\d+\s+)?[IVXLCDM]+[.\-–—:]/u.test(contentStart(analysis)) &&
-          !hasPredicate(analysis)
+          !hasPredicate(analysis) &&
+          (/^(?:\d+\s+)?[IVXLCDM]+[.\-–—:]/u.test(contentStart(analysis)) ||
+            (() => {
+              const title = contentStart(analysis)
+                .replace(/^(?:\d+\s+)?(?:\(?[a-zçğıöşü][.)]{1,2})\s*/iu, "")
+                .replace(/[^\p{L}]/gu, "");
+              return !!title && title === title.toLocaleUpperCase("tr-TR");
+            })())
         );
         continue;
       }

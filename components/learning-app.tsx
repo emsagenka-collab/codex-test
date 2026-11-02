@@ -27,6 +27,7 @@ import {
   LoaderCircle,
 } from "lucide-react";
 import WordCard from "./word-card";
+import LevelCompletion from "./level-completion";
 import Modal from "./modal";
 import { ImportForm, SettingsForm } from "./forms";
 import { Highlight, formatDate, difficulty } from "./shared";
@@ -148,9 +149,12 @@ export default function LearningApp() {
     window.scrollTo({ top: 0, behavior: "instant" });
   }
   const due = data?.due.length || 0;
-  const reviewPool = (data?.due || []).filter((w) => !reviewed.includes(w.id));
+  const reviewPool = (data?.due || []).filter(
+    (w) => w.examples.length > 0 && !reviewed.includes(w.id),
+  );
   const optionalPool = (data?.vocabulary || []).filter(
-    (w) => w.status !== "new" && !reviewed.includes(w.id),
+    (w) =>
+      w.status !== "new" && w.examples.length > 0 && !reviewed.includes(w.id),
   );
   const reviewWord = reviewId
     ? data?.vocabulary.find((w) => w.id === reviewId)
@@ -395,12 +399,39 @@ export default function LearningApp() {
                             </button>
                           </div>
                         )}
+                        {(data.levelProgress.completed ||
+                          data.levelProgress.total === 0) && (
+                          <LevelCompletion
+                            progress={data.levelProgress}
+                            busy={busy}
+                            canReview={
+                              reviewPool.length > 0 || optionalPool.length > 0
+                            }
+                            onAdvance={() => {
+                              const level = data.levelProgress.nextLevel;
+                              if (level)
+                                void act(
+                                  "settings",
+                                  { level },
+                                  `Weiter geht’s mit ${level}. Deine bisherigen Bewertungen bleiben erhalten.`,
+                                );
+                            }}
+                            onImport={() => setModal("import")}
+                            onReview={() => {
+                              const first = reviewPool[0] || optionalPool[0];
+                              navigate("review");
+                              if (first) setReviewId(first.id);
+                            }}
+                          />
+                        )}
                         {data.daily.length > 0 &&
-                          data.daily.length < dailyGoal && (
+                          data.daily.length < dailyGoal &&
+                          !data.levelProgress.completed && (
                             <p className="muted">
                               Aktuell verfügbar: {data.daily.length} von{" "}
-                              {dailyGoal} neuen Wörtern. Importiere weiteren
-                              Text, um deine Auswahl aufzufüllen.
+                              {dailyGoal} Lernwörtern auf {data.settings.level}.
+                              Noch unbearbeitete Wörter werden zuerst
+                              berücksichtigt.
                             </p>
                           )}
                         {data.daily.map((w, i) => (
@@ -413,22 +444,25 @@ export default function LearningApp() {
                             onRate={(rating) => void rate(w, rating)}
                           />
                         ))}
-                        {!data.daily.length && (
-                          <div className="empty-card">
-                            <Leaf size={30} />
-                            <h3>Raum für neue Wörter</h3>
-                            <p>
-                              Für neue Tageswörter fehlen noch passende,
-                              ungesehene Wörter. Importiere einen weiteren Text.
-                            </p>
-                            <button
-                              className="primary"
-                              onClick={() => setModal("import")}
-                            >
-                              <Plus size={16} /> Weiteren Text importieren
-                            </button>
-                          </div>
-                        )}
+                        {!data.daily.length &&
+                          !data.levelProgress.completed &&
+                          data.levelProgress.total > 0 && (
+                            <div className="empty-card">
+                              <Leaf size={30} />
+                              <h3>Raum für neue Wörter</h3>
+                              <p>
+                                Für neue Tageswörter fehlen noch passende,
+                                ungesehene Wörter. Importiere einen weiteren
+                                Text.
+                              </p>
+                              <button
+                                className="primary"
+                                onClick={() => setModal("import")}
+                              >
+                                <Plus size={16} /> Weiteren Text importieren
+                              </button>
+                            </div>
+                          )}
                       </section>
                       <div className="review-callout">
                         <div className="round-icon">

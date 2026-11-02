@@ -68,6 +68,9 @@ const knownForms = new Set(
     "geçinmeyi",
     "anlamını",
     "düşünüyordu",
+    "nişanını",
+    "verdiklerini",
+    "bilesiniz",
     "dinliyordu",
   ].map(normalizeForm),
 );

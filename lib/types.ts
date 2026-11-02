@@ -74,6 +74,14 @@ export type State = {
     sectionCount: number;
     matchedCount: number;
   } | null;
+  levelProgress: {
+    level: string;
+    total: number;
+    remaining: number;
+    processed: number;
+    completed: boolean;
+    nextLevel: string | null;
+  };
   stats: { total: number; week: number; streak: number; studiedToday: number };
   settings: Settings;
   onboarded: boolean;

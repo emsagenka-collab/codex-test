@@ -39,8 +39,13 @@ test("source provenance, stable daily selection, real imports, and persisted rat
     importBook("Mein eigener Text", text);
     assert.equal(state().book?.isDemo, 0);
     assert.deepEqual(
-      state().daily.map((w) => w.id),
-      first.daily.map((w) => w.id),
+      state().daily.map((word) => word.word),
+      ["sebat"],
+    );
+    assert.ok(
+      state().daily.every(
+        (word) => word.source === "Mein eigener Text" && word.difficulty === 2,
+      ),
     );
     const records = exportData();
     const book = records.books.find((b) => b.title === "Mein eigener Text")!;
@@ -61,13 +66,17 @@ test("source provenance, stable daily selection, real imports, and persisted rat
     assert.equal(state().book?.title, "Mein eigener Text");
     assert.ok(records.progress.some((p) => p.status === "difficult"));
     rate(first.daily[0].id, "hard");
-    assert.equal(state().daily[0].reviewCount, 1);
+    assert.equal(
+      state().vocabulary.find((word) => word.id === first.daily[0].id)!
+        .reviewCount,
+      1,
+    );
     t.mock.timers.enable({
       apis: ["Date"],
       now: new Date(first.today + "T12:00:00Z").getTime() + 86400000,
     });
     const tomorrow = state();
-    assert.equal(tomorrow.daily.length, 2);
+    assert.equal(tomorrow.daily.length, 1);
     assert.ok(
       tomorrow.daily.every((w) => !first.daily.some((old) => old.id === w.id)),
     );
@@ -76,7 +85,7 @@ test("source provenance, stable daily selection, real imports, and persisted rat
     const raw =
       "Emaneti do€ru korumay›, komﬂularla paylaﬂmay› ö€rendi.\n\nTefekkür ederken haklar›n› düﬂündü.";
     const learningBefore = JSON.stringify(exportData().progress);
-    const todayBefore = JSON.stringify(exportData().daily);
+
     const legacy = importBook("Ältere PDF-Schrift", raw);
     const displayed = state();
     const emanet = displayed.vocabulary.find((w) => w.word === "emanet")!;
@@ -86,7 +95,12 @@ test("source provenance, stable daily selection, real imports, and persisted rat
     );
     assert.match(emanet.originalSentence!, /do€ru/);
     assert.equal(JSON.stringify(exportData().progress), learningBefore);
-    assert.equal(JSON.stringify(exportData().daily), todayBefore);
+    assert.ok(
+      state().daily.every((word) => word.source === "Ältere PDF-Schrift"),
+    );
+    const todayAfter = JSON.stringify(exportData().daily);
+    state();
+    assert.equal(JSON.stringify(exportData().daily), todayAfter);
     const importedRaw = exportData()
       .sections.filter((s) => s.bookId === legacy.bookId)
       .map((s) => s.originalText)
@@ -97,7 +111,7 @@ test("source provenance, stable daily selection, real imports, and persisted rat
       /doğru/,
     );
     const progressSnapshot = JSON.stringify(exportData().progress);
-    const dailySnapshot = JSON.stringify(exportData().daily);
+
     const splitRaw =
       "Peygambe rimiz’in emaneti koruduğunu dinliyordu.\n\nTefek-\nkür ederken herşey hazırdı.";
     const splitBook = importBook("Getrennte PDF-Wörter", splitRaw);
@@ -113,7 +127,9 @@ test("source provenance, stable daily selection, real imports, and persisted rat
     );
     assert.equal(reflection.sentence, "Tefekkür ederken herşey hazırdı.");
     assert.equal(JSON.stringify(exportData().progress), progressSnapshot);
-    assert.equal(JSON.stringify(exportData().daily), dailySnapshot);
+    assert.ok(
+      state().daily.every((word) => word.source === "Getrennte PDF-Wörter"),
+    );
     assert.equal(
       exportData()
         .sections.filter((s) => s.bookId === splitBook.bookId)

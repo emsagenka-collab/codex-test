@@ -91,7 +91,8 @@ test("new and existing imports prefer verbatim prose with correct pages and pres
       assert.equal(selected.sentence, sentence);
       assert.equal(selected.pageNumber, 2);
       assert.equal(selected.rating, "hard");
-      assert.equal(selected.frequency, 1);
+      // Two heading mentions plus the real prose occurrence.
+      assert.equal(selected.frequency, 3);
       assert.equal(JSON.stringify(exportData().progress), progressBefore);
       assert.equal(JSON.stringify(exportData().daily), dailyBefore);
     }
@@ -117,7 +118,7 @@ test("new and existing imports prefer verbatim prose with correct pages and pres
     assert.equal(state().daily.length, 2);
     assert.ok(!state().daily.some((word) => word.word === "müjde"));
 
-    // Keep reviewed words without displaying a heading if the old book has no prose match.
+    // Recover the real source sentence even if the old occurrence index is corrupted.
     const rated = state().daily.find((word) => word.word === "metanet")!;
     rate(rated.id, "understood");
     db()
@@ -127,9 +128,9 @@ test("new and existing imports prefer verbatim prose with correct pages and pres
       .run(rated.id);
     const beforeMissing = JSON.stringify(exportData().progress);
     const missing = state().vocabulary.find((word) => word.id === rated.id)!;
-    assert.equal(missing.sentence, "");
+    assert.equal(missing.sentence, "Metanet ile bekledi.");
     assert.equal(missing.sentenceTranslation, "");
-    assert.equal(missing.frequency, 0);
+    assert.equal(missing.frequency, 1);
     assert.equal(missing.status, "learned");
     assert.equal(missing.pageNumber, null);
     assert.equal(JSON.stringify(exportData().progress), beforeMissing);

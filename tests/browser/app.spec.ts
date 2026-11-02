@@ -144,6 +144,9 @@ test("mobile import, daily lesson, persistence and all navigation", async ({
   await page.getByRole("button", { name: /Text analysieren &/ }).click();
   await expect(page.getByText("Deine Quelle:")).toBeVisible();
   await expect(page.locator(".source-footer")).toContainText("mein-buch");
+  await expect(page.getByText("AUS DEM DEMOTEXT", { exact: true })).toHaveCount(
+    0,
+  );
   await expect(page.getByText("Ersteller:")).toContainText("Ömer Faruk Takkaç");
   const rawText =
     "Emaneti do€ru korumay› ve komflularla paylaflmay› ö€rendi.\n\nTefekkür ederken haklar›n› düflündü.";
@@ -379,6 +382,11 @@ test("sentence carousel changes examples and PDF pages, keeps ratings and suppor
   const state = await (await request.get("/api/state")).json();
   expect(state.daily[0].reviewCount).toBe(1);
   expect(state.daily[0].examples).toHaveLength(3);
+  expect(state.daily[0].frequency).toBe(4);
+  await card.getByText("Wortwissen & Herkunft", { exact: true }).click();
+  await expect(card.locator(".detail-content")).toContainText(
+    "Im aktuellen Buch 4× erkannt",
+  );
   await page.setViewportSize({ width: 1440, height: 1050 });
   await page.screenshot({
     path: "/tmp/kelime-carousel-desktop.png",

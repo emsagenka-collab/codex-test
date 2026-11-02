@@ -38,3 +38,10 @@ test("difficult and uncertain words return before understood words", () => {
   assert.equal(schedule("good", 2, "2026-11-01").nextReview, "2026-11-13");
   assert.throws(() => schedule("invalid", 0, "2026-11-01"));
 });
+
+test("short source paragraphs are retained even though they are not sentence examples", () => {
+  assert.deepEqual(
+    splitSections("TEFEKKÜR\n\nTefekkür ederken sessizce düşündü."),
+    ["TEFEKKÜR", "Tefekkür ederken sessizce düşündü."],
+  );
+});

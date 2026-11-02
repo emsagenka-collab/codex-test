@@ -45,6 +45,8 @@ export function containsWord(sentence: string, word: string) {
   return tokens(sentence).some((t) => matches(t, word));
 }
 export function splitSections(text: string) {
+  // Preserve short source paragraphs too; sentence eligibility must not change
+  // the word count of the original text.
   return text
     .replace(/\r\n/g, "\n")
     .split(/\n\s*\n/)
@@ -62,7 +64,7 @@ export function splitSections(text: string) {
       if (current.trim()) groups.push(current.trim());
       return groups;
     })
-    .filter((p) => p.length > 15);
+    .filter((p) => p.length > 0);
 }
 export function sentences(section: string) {
   return (section.match(/[^.!?]+(?:[.!?]+[”’"»]?|$)/gu) || [section])

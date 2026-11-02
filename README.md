@@ -46,6 +46,16 @@ Beleg vorhanden, zeigt die Karte einen Hinweis statt eines solchen Ausschnitts.
 Die automatische Erkennung bleibt von den im PDF extrahierbaren Layoutmerkmalen
 abhängig und ist keine vollständige Grammatikanalyse.
 
+Die Fundzahl zählt alle erkannten Wortvorkommen im gespeicherten Text des
+aktuell geöffneten Buches, einschließlich mehrfacher Nennungen in einem Satz
+und Nennungen außerhalb des Fließtexts. Die Zahl geeigneter, unterschiedlicher
+Beispielsätze ist davon unabhängig. Beispiele werden aus dem gespeicherten
+Originaltext ermittelt, auch wenn ältere Satzindizes unvollständig sind.
+Bei einem importierten Buch wird nicht auf Demotext oder andere Bücher ausgewichen.
+Neue Importe behalten auch kurze Quellabsätze für die Zählung.
+Wiederhergestellte alte Sätze bekommen nur dann PDF-Seiten, wenn diese sicher
+zugeordnet werden können; fehlende Seiten lassen sich durch erneuten Import erfassen.
+
 Pro Wort stehen bis zu 30 unterschiedliche, belegte Beispielsätze aus demselben
 Quellbuch bereit. Mit den kleinen Pfeilen rechts oben in der Beispielbox wechselt
 der Satz mit einem gerichteten Schiebeübergang; Abschnitt und PDF-Seite wechseln

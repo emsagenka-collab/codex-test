@@ -30,7 +30,9 @@ export async function analyzeWithAI(text: string): Promise<Entry[]> {
     throw new Error("KI-Analyse nicht verfügbar. Bitte API-Zugang prüfen.");
   const data = await response.json();
   const words = JSON.parse(data.choices?.[0]?.message?.content || "{}").words;
-  const sourceSentences = splitSections(text).flatMap(exampleSentences);
+  const sourceSentences = splitSections(text).flatMap((section) =>
+    exampleSentences(section),
+  );
   if (!Array.isArray(words)) throw new Error("Ungültige KI-Antwort.");
   return words
     .filter(

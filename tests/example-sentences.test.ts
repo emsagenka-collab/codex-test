@@ -96,3 +96,18 @@ test("only prose is admitted; arbitrary markers, headings and table cells cannot
     "Daha sonra hicret etti.",
   ]);
 });
+
+test("PDF spacing is not a table and a following table does not erase preceding prose", () => {
+  for (const text of [
+    "Tefekkür  ederken sessizce düşündü.",
+    "Tefekkür\tederken sessizce düşündü.",
+  ])
+    assert.deepEqual(exampleSentences(text), [text]);
+  const mixed =
+    "Tefekkür ederken sessizce düşündü.\nOlay\tYıl\nHicret etti.\t622";
+  assert.deepEqual(exampleSentences(mixed), [
+    "Tefekkür ederken sessizce düşündü.",
+  ]);
+  const raw = "Tefekkür ederken komﬂular›n› düﬂündü.";
+  assert.deepEqual(exampleSentences(raw, true), [raw]);
+});

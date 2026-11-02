@@ -85,7 +85,7 @@ export default function WordCard({
       ) : (
         <p className="muted">
           Für dieses Wort wurde noch kein vollständiger Beispielsatz in der
-          Quelle gefunden.
+          aktuell geöffneten Quelle gefunden.
         </p>
       )}
       <div className="expand-sections">
@@ -107,7 +107,7 @@ export default function WordCard({
             </p>
             <p>
               <strong>Grundform:</strong> <span lang="tr">{w.word}</span> · Im
-              Text {w.frequency}× erkannt
+              aktuellen Buch {w.frequency}× erkannt
             </p>
           </div>
         </details>

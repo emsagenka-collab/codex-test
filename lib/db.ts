@@ -1,3 +1,4 @@
+import { indexBookSource, type SourceExample } from "./book-source";
 import { exampleSentences } from "./example-sentences";
 import { DatabaseSync } from "node:sqlite";
 import { mkdirSync } from "node:fs";
@@ -25,6 +26,23 @@ import type {
 } from "./types";
 let connection: DatabaseSync;
 const legacyBooks = new Map<number, boolean>();
+const sourceBooks = new Map<number, ReturnType<typeof indexBookSource>>();
+function sourceBook(bookId: number) {
+  if (!sourceBooks.has(bookId)) {
+    const sections = all(
+      "SELECT id,sectionNumber,originalText FROM TextSection WHERE bookId=? ORDER BY sectionNumber,id",
+      bookId,
+    ).map((row) => ({
+      id: Number(row.id),
+      sectionNumber: Number(row.sectionNumber),
+      text: String(row.originalText),
+    }));
+    if (sourceBooks.size >= 3)
+      sourceBooks.delete(sourceBooks.keys().next().value!);
+    sourceBooks.set(bookId, indexBookSource(sections, legacyBook(bookId)));
+  }
+  return sourceBooks.get(bookId)!;
+}
 function legacyBook(bookId: number) {
   if (!legacyBooks.has(bookId))
     legacyBooks.set(
@@ -169,7 +187,7 @@ export function importBook(
     if (start < 0) throw new Error("Quellenprüfung fehlgeschlagen.");
     sectionOffset = start + section.length;
     let sentenceOffset = 0;
-    return exampleSentences(section).map((sentence) => {
+    return exampleSentences(section, legacy).map((sentence) => {
       const sentenceStart = section.indexOf(sentence, sentenceOffset);
       sentenceOffset = sentenceStart + sentence.length;
       const startOffset = start + sentenceStart;
@@ -290,63 +308,54 @@ export function loadDemo() {
   return importBook("Ein Lesebuch · Demo", demoText, true);
 }
 function vocabulary(): Word[] {
-  const active = Number(
-    one("SELECT value FROM AppMeta WHERE key='activeBook'")?.value || 0,
+  const book = one(
+    "SELECT b.* FROM Book b JOIN AppMeta m ON m.value=CAST(b.id AS TEXT) WHERE m.key='activeBook'",
   );
-  const contextCache = new Map<string, Set<string>>();
+  if (!book) return [];
+  const active = Number(book.id);
+  const source = sourceBook(active);
+  const legacy = !book.isDemo && legacyBook(active);
   return all(
     `SELECT v.id,v.data,p.*,v.id AS vocabularyId FROM VocabularyWord v JOIN LearningProgress p ON p.wordId=v.id WHERE EXISTS (SELECT 1 FROM WordOccurrence WHERE wordId=v.id)`,
   ).map((row) => {
+    const entry = JSON.parse(String(row.data)) as Entry;
+    const found = source.forWord(entry.word);
     const occurrences = all(
-      `SELECT o.*,s.sectionNumber,b.title,b.isDemo,b.id AS bookId FROM WordOccurrence o JOIN TextSection s ON s.id=o.sectionId JOIN Book b ON b.id=s.bookId WHERE o.wordId=? ORDER BY (b.id=?) DESC,(o.sentence=?) DESC,b.isDemo ASC,o.id ASC`,
+      "SELECT o.* FROM WordOccurrence o JOIN TextSection s ON s.id=o.sectionId WHERE o.wordId=? AND s.bookId=? ORDER BY o.id",
       Number(row.vocabularyId),
       active,
-      JSON.parse(String(row.data)).demo,
     );
-    const entry = JSON.parse(String(row.data)) as Entry;
-    const candidates = occurrences.flatMap((occurrence) => {
-      const context = String(occurrence.surroundingText);
-      if (!contextCache.has(context))
-        contextCache.set(context, new Set(exampleSentences(context)));
-      const allowed = contextCache.get(context)!;
-      const legacy =
-        !occurrence.isDemo && legacyBook(Number(occurrence.bookId));
-      return exampleSentences(String(occurrence.sentence))
-        .filter(
-          (sentence) =>
-            allowed.has(sentence) &&
-            containsWord(repairTurkishText(sentence, legacy), entry.word),
-        )
-        .map((sentence, part) => ({
-          occurrence,
-          sentence,
-          id: `${occurrence.id}:${part}`,
-        }));
-    });
-    const selected = candidates[0];
-    const seenSentences = new Set<string>();
-    const examples: WordExample[] = [];
-    for (const candidate of candidates) {
-      // Keep navigation within the same source book as the initial example.
-      if (candidate.occurrence.bookId !== selected?.occurrence.bookId) continue;
-      const occurrence = candidate.occurrence;
-      const sentence = repairTurkishText(
-        candidate.sentence,
-        !occurrence.isDemo && legacyBook(Number(occurrence.bookId)),
+    function metadata(candidate: SourceExample | undefined) {
+      if (!candidate) return undefined;
+      // Old indices can be incomplete. Never invent a page for a recovered quote.
+      const exact = occurrences.filter(
+        (o) =>
+          o.sectionId === candidate.section.id && o.sentence === candidate.raw,
       );
-      const normalizedSentence = sentence
-        .normalize("NFC")
-        .replace(/\s+/gu, " ")
-        .trim();
-      if (seenSentences.has(normalizedSentence)) continue;
-      seenSentences.add(normalizedSentence);
-      const unchanged = candidate.sentence === occurrence.sentence;
+      const duplicates = candidate.section.text.split(candidate.raw).length - 1;
+      if (exact.length && (duplicates === 1 || exact.length === duplicates))
+        return exact[0];
+      const covering = occurrences.filter((o) => {
+        if (o.sectionId !== candidate.section.id) return false;
+        const stored = String(o.sentence);
+        const start = candidate.section.text.indexOf(stored);
+        return (
+          start >= 0 &&
+          start === candidate.section.text.lastIndexOf(stored) &&
+          start <= candidate.start &&
+          candidate.start + candidate.raw.length <= start + stored.length
+        );
+      });
+      return covering.length === 1 ? covering[0] : undefined;
+    }
+    function pages(candidate: SourceExample | undefined) {
+      const occurrence = metadata(candidate);
       const exactPages =
-        unchanged || occurrence.pageNumber === occurrence.pageEnd;
-      examples.push({
-        id: candidate.id,
-        sentence,
-        sectionNumber: Number(occurrence.sectionNumber),
+        candidate &&
+        occurrence &&
+        (occurrence.sentence === candidate.raw ||
+          occurrence.pageNumber === occurrence.pageEnd);
+      return {
         pageNumber:
           !exactPages || occurrence.pageNumber == null
             ? null
@@ -355,48 +364,63 @@ function vocabulary(): Word[] {
           !exactPages || occurrence.pageEnd == null
             ? null
             : Number(occurrence.pageEnd),
-        source: String(occurrence.title),
-        demoBook: !!occurrence.isDemo,
-        sentenceTranslation: unchanged ? String(occurrence.translation) : "",
+      };
+    }
+    const seen = new Set<string>();
+    const examples: WordExample[] = [];
+    for (const candidate of found.examples) {
+      const normalized = candidate.sentence
+        .normalize("NFC")
+        .replace(/\s+/gu, " ")
+        .trim();
+      if (seen.has(normalized)) continue;
+      seen.add(normalized);
+      const occurrence = metadata(candidate);
+      examples.push({
+        id: candidate.id,
+        sentence: candidate.sentence,
+        sectionNumber: candidate.section.sectionNumber,
+        ...pages(candidate),
+        source: String(book.title),
+        demoBook: !!book.isDemo,
+        sentenceTranslation:
+          occurrence?.sentence === candidate.raw
+            ? String(occurrence.translation)
+            : "",
       });
       if (examples.length === 30) break;
     }
-    const o = selected?.occurrence || occurrences[0];
-    const rawSentence = selected?.sentence || "";
-    const unchanged = rawSentence === o.sentence;
-    const legacy = !o.isDemo && legacyBook(Number(o.bookId));
-    const sentence = repairTurkishText(rawSentence, legacy);
-    // If an old combined heading/paragraph spanned pages, its trimmed excerpt
-    // cannot safely inherit the entire occurrence's page range.
-    const hasExactPages =
-      !!selected && (unchanged || o.pageNumber === o.pageEnd);
-    const section = repairTurkishText(String(o.surroundingText), legacy);
+    const selected = found.examples[0];
+    const occurrence = metadata(selected);
+    const sentence = selected?.sentence || "";
+    const section = selected
+      ? repairTurkishText(selected.section.text, legacy)
+      : "";
     return {
-      ...JSON.parse(String(row.data)),
+      ...entry,
       id: Number(row.vocabularyId),
       examples,
       sentence,
       section,
       orthography: checkTurkishOrthography(sentence),
-      wordOrthography: checkTurkishOrthography(
-        JSON.parse(String(row.data)).word,
-      ),
-      originalSentence: sentence !== rawSentence ? rawSentence : null,
+      wordOrthography: checkTurkishOrthography(entry.word),
+      originalSentence:
+        selected && sentence !== selected.raw ? selected.raw : null,
       originalSection:
-        section !== String(o.surroundingText)
-          ? String(o.surroundingText)
+        selected && section !== selected.section.text
+          ? selected.section.text
           : null,
-      sectionNumber: Number(o.sectionNumber),
-      pageNumber:
-        !hasExactPages || o.pageNumber == null ? null : Number(o.pageNumber),
-      pageEnd: !hasExactPages || o.pageEnd == null ? null : Number(o.pageEnd),
-      source: String(o.title),
-      demoBook: !!o.isDemo,
-      sentenceTranslation: unchanged ? String(o.translation) : "",
-      contextExplanation: unchanged ? String(o.context) : "",
-      frequency: candidates.filter(
-        (candidate) => Number(candidate.occurrence.bookId) === active,
-      ).length,
+      sectionNumber: selected?.section.sectionNumber || 0,
+      ...pages(selected),
+      source: String(book.title),
+      demoBook: !!book.isDemo,
+      sentenceTranslation: examples[0]?.sentenceTranslation || "",
+      contextExplanation:
+        selected && occurrence?.sentence === selected.raw
+          ? String(occurrence.context)
+          : "",
+      // Every word occurrence in the active source counts, even in excluded layouts.
+      frequency: found.frequency,
       status: String(row.status),
       firstSeen: row.firstSeen as string | null,
       lastReviewed: row.lastReviewed as string | null,
@@ -434,6 +458,7 @@ export function state(): State {
           !w.firstSeen &&
           w.status === "new" &&
           w.frequency > 0 &&
+          w.examples.length > 0 &&
           !previousIds.includes(w.id),
       )
       .sort(
@@ -574,6 +599,7 @@ export function rate(id: number, rating: string) {
 }
 export function reset() {
   legacyBooks.clear();
+  sourceBooks.clear();
   db().exec("BEGIN IMMEDIATE");
   try {
     db().exec(

@@ -1,3 +1,4 @@
+import { repairTurkishText, hasLegacyTurkishGlyphs } from "./text-repair";
 import { sentences, tokens } from "./learning";
 
 // Conservative source selection: uncertainty should omit an example, not turn
@@ -52,11 +53,24 @@ export function isContentsText(text: string) {
     );
 }
 function isTableLine(text: string) {
-  return (
-    /[\t|¦│┃]/u.test(text) ||
-    /\S {2,}\S/u.test(text) ||
+  if (
+    /[|¦│┃]/u.test(text) ||
     /^\s*[+─━┌┐└┘├┤┬┴┼-]{3,}/u.test(text) ||
     /^\s*(?:tablo|çizelge|table)\s*\d*\s*[:.–-]/iu.test(text)
+  )
+    return true;
+  const cells = text
+    .split(/\t+| {2,}/u)
+    .map((cell) => cell.trim())
+    .filter(Boolean);
+  if (cells.length < 2) return false;
+  // PDF justification also uses wide spaces/tabs. It is not by itself a table.
+  const numericCell = cells.some((cell) =>
+    /^\d+(?:[.,:/–-]\d+)*[.)]?$/u.test(cell),
+  );
+  const columnLabel = /^(?:olay|tarih|yıl|yer|sayı|açıklama)$/iu.test(cells[0]);
+  return (
+    numericCell || columnLabel || (cells.length >= 3 && !hasPredicate(text))
   );
 }
 function isHeadingOrIndex(text: string) {
@@ -89,40 +103,55 @@ function isCompleteExample(text: string) {
   );
 }
 /** Keep only verbatim prose; reject list/table blocks before sentence splitting. */
-export function exampleSentences(section: string): string[] {
-  if (isContentsText(section)) return [];
+export function exampleSentences(
+  section: string,
+  legacy = hasLegacyTurkishGlyphs(section),
+): string[] {
+  if (isContentsText(repairTurkishText(section, legacy))) return [];
   const result: string[] = [];
   for (const block of section.split(/\n\s*\n/u)) {
     const lines = block.split("\n");
-    // Reject the whole table block, including wrapped cells without separators.
-    if (lines.some(isTableLine)) continue;
+    let inTable = false;
     let paragraph: string[] = [];
     let inList = false;
     function flush() {
       if (paragraph.length)
         result.push(
-          ...sentences(paragraph.join("\n")).filter(isCompleteExample),
+          ...sentences(paragraph.join("\n")).filter((sentence) =>
+            isCompleteExample(repairTurkishText(sentence, legacy)),
+          ),
         );
       paragraph = [];
     }
     for (const line of lines) {
-      if (isListLine(line)) {
+      const analysis = repairTurkishText(line, legacy);
+      if (isTableLine(analysis)) {
+        flush();
+        inTable = true;
+        continue;
+      }
+      // Do not discard preceding prose merely because a table follows it.
+      if (inTable) continue;
+      if (isListLine(analysis)) {
         flush();
         // A chapter heading may immediately precede a wrapped prose paragraph.
         // List items, in contrast, also exclude their continuation lines.
         inList = !(
-          /^(?:\d+\s+)?[IVXLCDM]+[.\-–—:]/u.test(contentStart(line)) &&
-          !hasPredicate(line)
+          /^(?:\d+\s+)?[IVXLCDM]+[.\-–—:]/u.test(contentStart(analysis)) &&
+          !hasPredicate(analysis)
         );
         continue;
       }
       if (inList) {
         // Only an unmistakable fresh prose line can end a list without a blank line.
-        if (!/^\p{Lu}/u.test(line.trim()) || !isCompleteExample(line.trim()))
+        if (
+          !/^\p{Lu}/u.test(line.trim()) ||
+          !isCompleteExample(analysis.trim())
+        )
           continue;
         inList = false;
       }
-      if (isHeadingOrIndex(line)) flush();
+      if (isHeadingOrIndex(analysis)) flush();
       else paragraph.push(line);
     }
     flush();

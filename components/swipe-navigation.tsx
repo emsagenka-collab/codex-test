@@ -44,7 +44,7 @@ export default function SwipeNavigation({
       return;
     const animation = content.current?.animate(
       [
-        { transform: `translateX(${index > old ? -36 : 36}px)`, opacity: 0.35 },
+        { transform: `translateX(${index > old ? 36 : -36}px)`, opacity: 0.35 },
         { transform: "translateX(0)", opacity: 1 },
       ],
       { duration: 260, easing: "cubic-bezier(0.22, 0.61, 0.36, 1)" },
@@ -100,8 +100,8 @@ export default function SwipeNavigation({
       performance.now() - current.started > 800
     )
       return;
-    // The reader's requested order: swipe right to advance, left to go back.
-    const next = index + (dx > 0 ? 1 : -1);
+    // Follow the page order: swipe left to advance, right to go back.
+    const next = index + (dx < 0 ? 1 : -1);
     if (next < 0 || next >= count) return;
     event.preventDefault();
     onChange(next);

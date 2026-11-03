@@ -35,7 +35,7 @@ export async function checkMobileNavigation(page: Page) {
   await page.reload();
   await expect(page.locator("article.word-card")).toHaveCount(2);
   const session = await page.context().newCDPSession(page);
-  async function swipe(x1 = 75, y1 = 160, x2 = 285, y2 = 160) {
+  async function swipe(x1 = 285, y1 = 160, x2 = 75, y2 = 160) {
     await session.send("Input.dispatchTouchEvent", {
       type: "touchStart",
       touchPoints: [{ x: x1, y: y1 }],
@@ -59,6 +59,13 @@ export async function checkMobileNavigation(page: Page) {
       .getByRole("button", { name: label, exact: true })
       .click();
     await expect(active).toHaveText(label);
+    await page.locator(".tab-content").evaluate(async (element) => {
+      await Promise.all(
+        element
+          .getAnimations()
+          .map((animation) => animation.finished.catch(() => {})),
+      );
+    });
   }
   await swipe();
   await expect(active).toHaveText("Wiederholen");
@@ -75,12 +82,12 @@ export async function checkMobileNavigation(page: Page) {
   await swipe();
   await expect(active).toHaveText("Fortschritt");
   for (const label of ["Bibliothek", "Wörter", "Wiederholen", "Heute"]) {
-    await swipe(285, 160, 75, 160);
+    await swipe(75, 160, 285, 160);
     await expect(active).toHaveText(label);
   }
-  await swipe(285, 160, 75, 160);
+  await swipe(75, 160, 285, 160);
   await expect(active).toHaveText("Heute");
-  await swipe(75, 160, 105, 160);
+  await swipe(285, 160, 255, 160);
   await expect(active).toHaveText("Heute");
   await swipe(75, 320, 80, 150);
   await expect(active).toHaveText("Heute");
@@ -90,11 +97,11 @@ export async function checkMobileNavigation(page: Page) {
   const quote = page.locator(".example blockquote").first();
   await quote.scrollIntoViewIfNeeded();
   const box = (await quote.boundingBox())!;
-  await swipe(75, box.y + box.height / 2, 285, box.y + box.height / 2);
+  await swipe(285, box.y + box.height / 2, 75, box.y + box.height / 2);
   await expect(active).toHaveText("Heute");
   await page.evaluate(() => scrollTo(0, 0));
   await page.getByRole("button", { name: "Einstellungen öffnen" }).click();
-  await swipe(75, 260, 285, 260);
+  await swipe(285, 260, 75, 260);
   await expect(active).toHaveText("Heute");
   await expect(page.getByRole("dialog")).toBeVisible();
   await page.getByRole("button", { name: "Dialog schließen" }).click();
@@ -123,7 +130,7 @@ export async function checkMobileNavigation(page: Page) {
     ),
   ).toBe(true);
   await page.setViewportSize({ width: 1280, height: 900 });
-  await swipe(285, 160, 75, 160);
+  await swipe(75, 160, 285, 160);
   await expect(active).toHaveText("Wiederholen");
   await page.setViewportSize({ width: 390, height: 844 });
   // A real demo translation is retained when the card is revealed.

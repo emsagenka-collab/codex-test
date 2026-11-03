@@ -76,8 +76,8 @@ Katalog ist weiterhin begrenzt; unbekannte Wörter werden nicht als automatisch
 
 ## Navigation am Handy
 
-Horizontale Wischgesten wechseln zwischen den fünf Kategorien: nach rechts zur
-nächsten, nach links zur vorherigen. An den Enden gibt es keinen Umlauf. Vertikales
+Horizontale Wischgesten wechseln zwischen den fünf Kategorien: nach links zur
+nächsten, nach rechts zur vorherigen. An den Enden gibt es keinen Umlauf. Vertikales
 Scrollen, Textauswahl, Bedienelemente, Satzkarussell und Dialoge bleiben unabhängig.
 Ein kurzer Schiebeübergang begleitet den Wechsel; die Systemeinstellung für
 reduzierte Bewegung wird berücksichtigt. Die Navigation bleibt auch per Antippen verfügbar.

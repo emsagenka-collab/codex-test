@@ -1,23 +1,35 @@
-const { spawn } = require('node:child_process');
-async function openWhenReady() {
-  for (let attempt = 0; attempt < 120; attempt++) {
+const { spawn } = require("node:child_process");
+async function openWhenReady({
+  request = fetch,
+  open = () =>
+    spawn("cmd.exe", ["/c", "start", "", "http://localhost:3000"], {
+      detached: true,
+      stdio: "ignore",
+    }).unref(),
+  wait = () => new Promise((resolve) => setTimeout(resolve, 1000)),
+  attempts = 120,
+} = {}) {
+  for (let attempt = 0; attempt < attempts; attempt++) {
     try {
-      const response = await fetch('http://localhost:3000/api/state', {
-        signal: AbortSignal.timeout(2000),
+      // Opening a browser must not trigger a full book analysis. That analysis
+      // can outlast a readiness timeout and otherwise cause endless retries.
+      const response = await request("http://localhost:3000/api/health", {
+        signal: AbortSignal.timeout(10000),
       });
       if (response.ok) {
-        const state = await response.json();
-        if (typeof state.today === 'string' && Array.isArray(state.daily)) {
-          spawn('cmd.exe', ['/c', 'start', '', 'http://localhost:3000'], {
-            detached: true,
-            stdio: 'ignore',
-          }).unref();
-          return;
+        const health = await response.json();
+        if (health.app === "kelime" && health.ready === true) {
+          open();
+          return true;
         }
       }
     } catch {}
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    await wait();
   }
-  console.log('Bitte http://localhost:3000 im Browser oeffnen, sobald die App bereit ist.');
+  console.log(
+    "Bitte http://localhost:3000 im Browser oeffnen, sobald die App bereit ist.",
+  );
+  return false;
 }
-openWhenReady();
+module.exports = { openWhenReady };
+if (require.main === module) void openWhenReady();

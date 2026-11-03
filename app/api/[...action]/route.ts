@@ -19,6 +19,11 @@ export async function GET(
 ) {
   try {
     const { action } = await params;
+    if (action[0] === "health")
+      return NextResponse.json(
+        { app: "kelime", ready: true },
+        { headers: { "Cache-Control": "no-store" } },
+      );
     if (action[0] === "tdk") {
       const word = request.nextUrl.searchParams.get("word") || "";
       if (

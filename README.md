@@ -147,7 +147,7 @@ Die gespeicherte Lernzeit ist eine persönliche Vormerkung. Hintergrund-/Push-Be
 
 ## Datenhaltung & Architektur
 
-`data/kelime.sqlite` wird beim ersten API-Aufruf angelegt, einschließlich WAL/SHM-Dateien. Dieses Verzeichnis ist ignoriert. Alternativ `KELIME_DATA_DIR` auf ein dauerhaftes Verzeichnis setzen. Texte bleiben auf dem **App-Server**, nicht im Browser; Browser-Neuladen und Prozessneustart verlieren sie nicht. Bei Verlust der Maschine ohne Volume/Snapshot sind sie weg. Für vollständige Backups den Server stoppen und das Datenverzeichnis sichern. Der JSON-Export ist zusätzlich lesbar; eine automatische Wiederherstellung aus JSON ist nicht implementiert.
+`data/kelime.sqlite` wird beim ersten Datenabruf angelegt, einschließlich WAL/SHM-Dateien. Dieses Verzeichnis ist ignoriert. Alternativ `KELIME_DATA_DIR` auf ein dauerhaftes Verzeichnis setzen. Texte bleiben auf dem **App-Server**, nicht im Browser; Browser-Neuladen und Prozessneustart verlieren sie nicht. Bei Verlust der Maschine ohne Volume/Snapshot sind sie weg. Für vollständige Backups den Server stoppen und das Datenverzeichnis sichern. Der JSON-Export ist zusätzlich lesbar; eine automatische Wiederherstellung aus JSON ist nicht implementiert.
 
 - `app/`: App Router, Layout und globale, responsive Styles.
 - `components/`: getrennte Komponenten für Navigation, Lernkarten, Import/Einstellungen, Fortschritt und zugängliche native Dialoge.
@@ -162,7 +162,20 @@ Die gespeicherte Lernzeit ist eine persönliche Vormerkung. Hintergrund-/Push-Be
 
 Datenmodell: `User`, `Book`, `TextSection`, `VocabularyWord` (lexikalische Felder als JSON), `WordOccurrence`, `LearningProgress`, `DailyWords`; zusätzlich `Activity` für Lerntage und `AppMeta` für die aktive Quelle. Ein lokaler Nutzer. SQL-Fremdschlüssel, parametrisierte Abfragen und atomare Schreibvorgänge.
 
-API: `GET /api/state`, `GET /api/export`; `POST /api/import` (Multipart `file`, `level`, `useAI`), `/api/demo`, `/api/rate` (`id`, `rating`), `/api/settings`, `/api/reset` (`confirm: "DELETE"`).
+Die aufbereitete Buchanalyse wird für bis zu drei Bücher im Arbeitsspeicher
+wiederverwendet. Beispielsätze, PDF-Wortreparaturen und Quellenmetadaten werden
+dadurch nicht bei jeder Statusabfrage neu berechnet. SQLite-Änderungszähler
+invalidieren die Analyse bei Änderungen an Büchern, Abschnitten, Definitionen
+oder Fundstellen, auch über eine andere Datenbankverbindung. Lernfortschritt,
+Bewertungen, Tagesziele und Fälligkeiten werden weiterhin aktuell eingelesen.
+Nach einem Prozessneustart wird die Analyse beim ersten Buchabruf neu aufgebaut.
+
+Der automatische Windows-Browserstart prüft ausschließlich `/api/health`.
+Diese schnelle Bereitschaftsabfrage analysiert kein Buch und legt keine
+Lerndatenbank an. Eine längere erste Buchanalyse löst deshalb keine wiederholten
+Startversuche mit `/api/state` mehr aus.
+
+API: `GET /api/health`, `GET /api/state`, `GET /api/export`; `POST /api/import` (Multipart `file`, `level`, `useAI`), `/api/demo`, `/api/rate` (`id`, `rating`), `/api/settings`, `/api/reset` (`confirm: "DELETE"`).
 
 Wiederholungen: schwierig/später nach 1 Tag, unsicher nach 2, verstanden zunächst nach 4; Wiederholungsbewertungen „gewusst“ zunächst nach 3, „sehr leicht“ nach 7 Tagen. Erfolgreiche Wiederholungen verlängern das Intervall gedeckelt. Erneutes Bewerten am selben Tag korrigiert die Bewertung, ohne den Wiederholungszähler aufzublähen.
 

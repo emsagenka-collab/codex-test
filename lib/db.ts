@@ -36,6 +36,33 @@ import type {
 let connection: DatabaseSync;
 const legacyBooks = new Map<number, boolean>();
 const sourceBooks = new Map<number, ReturnType<typeof indexBookSource>>();
+type SourceWord = Omit<
+  Word,
+  | "status"
+  | "firstSeen"
+  | "lastReviewed"
+  | "nextReview"
+  | "reviewCount"
+  | "rating"
+>;
+const bookWords = new Map<
+  number,
+  { words: SourceWord[]; progressIds: number[] }
+>();
+let cachedContentRevision: string | undefined;
+
+function contentRevision() {
+  return String(
+    one("SELECT value FROM AppMeta WHERE key='contentRevision'")?.value || "0",
+  );
+}
+
+function clearBookCaches() {
+  legacyBooks.clear();
+  sourceBooks.clear();
+  bookWords.clear();
+  cachedContentRevision = undefined;
+}
 function sourceBook(bookId: number) {
   if (!sourceBooks.has(bookId)) {
     const sections = all(
@@ -125,6 +152,29 @@ export function db() {
     connection.exec(
       "ALTER TABLE DailyWords ADD COLUMN scope TEXT NOT NULL DEFAULT ''",
     );
+  // Track source changes, including edits from another connection. Ratings and
+  // settings do not invalidate expensive, immutable sentence analysis.
+  connection.exec(
+    "INSERT OR IGNORE INTO AppMeta(key,value) VALUES ('contentRevision','0')",
+  );
+  for (const table of [
+    "Book",
+    "TextSection",
+    "VocabularyWord",
+    "WordOccurrence",
+  ])
+    for (const operation of ["INSERT", "UPDATE", "DELETE"])
+      connection.exec(`
+        CREATE TRIGGER IF NOT EXISTS content_${table}_${operation}
+        AFTER ${operation} ON ${table} BEGIN
+          INSERT INTO AppMeta(key,value) VALUES ('contentRevision','1')
+          ON CONFLICT(key) DO UPDATE SET value=CAST(value AS INTEGER)+1;
+        END;
+      `);
+  connection.exec(`
+    CREATE INDEX IF NOT EXISTS occurrence_word_section ON WordOccurrence(wordId,sectionId);
+    CREATE INDEX IF NOT EXISTS section_book ON TextSection(bookId);
+  `);
   connection.prepare("INSERT OR IGNORE INTO User VALUES (1,?)").run(
     JSON.stringify({
       dailyWordCount: 2,
@@ -335,44 +385,47 @@ export function loadDemo() {
   }
   return importBook("Ein Lesebuch · Demo", demoText, true);
 }
-function vocabulary(): Word[] {
-  const book = one(
-    "SELECT b.* FROM Book b JOIN AppMeta m ON m.value=CAST(b.id AS TEXT) WHERE m.key='activeBook'",
-  );
-  if (!book) return [];
+function sourceVocabulary(book: Record<string, unknown>) {
   const active = Number(book.id);
+  const revision = contentRevision();
+  if (revision !== cachedContentRevision) clearBookCaches();
+  const cached = bookWords.get(active);
+  if (cached) return cached;
   const source = sourceBook(active);
   const legacy = !book.isDemo && legacyBook(active);
+  const progressIds: number[] = [];
+  const insertWord = db().prepare(
+    "INSERT OR IGNORE INTO VocabularyWord(word,normalizedWord,data) VALUES (?,?,?)",
+  );
+  const findWord = db().prepare(
+    "SELECT id FROM VocabularyWord WHERE normalizedWord=?",
+  );
   // Repair sparse older imports from the raw source and the bundled dictionary.
   // This creates only attested words with suitable examples, never guessed entries.
   for (const entry of book.isDemo ? lexicon : learningLexicon) {
     const found = source.forWord(entry.word);
     if (!found.frequency || !found.examples.length) continue;
-    db()
-      .prepare(
-        "INSERT OR IGNORE INTO VocabularyWord(word,normalizedWord,data) VALUES (?,?,?)",
-      )
-      .run(entry.word, normalize(entry.word), JSON.stringify(entry));
-    const row = one(
-      "SELECT id FROM VocabularyWord WHERE normalizedWord=?",
-      normalize(entry.word),
-    );
-    db()
-      .prepare(
-        "INSERT OR IGNORE INTO LearningProgress(userId,wordId) VALUES (1,?)",
-      )
-      .run(Number(row.id));
+    const normalized = normalize(entry.word);
+    insertWord.run(entry.word, normalized, JSON.stringify(entry));
+    progressIds.push(Number(findWord.get(normalized)!.id));
   }
-  return all(
-    `SELECT v.id,v.data,p.*,v.id AS vocabularyId FROM VocabularyWord v JOIN LearningProgress p ON p.wordId=v.id`,
+  // Read the active book's occurrence metadata once instead of once per word.
+  const occurrencesByWord = new Map<number, Record<string, unknown>[]>();
+  for (const occurrence of all(
+    "SELECT o.* FROM WordOccurrence o JOIN TextSection s ON s.id=o.sectionId WHERE s.bookId=? ORDER BY o.id",
+    active,
+  )) {
+    const id = Number(occurrence.wordId);
+    if (!occurrencesByWord.has(id)) occurrencesByWord.set(id, []);
+    occurrencesByWord.get(id)!.push(occurrence);
+  }
+  const repairedSections = new Map<number, string>();
+  const words: SourceWord[] = all(
+    "SELECT id,data FROM VocabularyWord ORDER BY id",
   ).map((row) => {
     const entry = JSON.parse(String(row.data)) as Entry;
     const found = source.forWord(entry.word);
-    const occurrences = all(
-      "SELECT o.* FROM WordOccurrence o JOIN TextSection s ON s.id=o.sectionId WHERE o.wordId=? AND s.bookId=? ORDER BY o.id",
-      Number(row.vocabularyId),
-      active,
-    );
+    const occurrences = occurrencesByWord.get(Number(row.id)) || [];
     function metadata(candidate: SourceExample | undefined) {
       if (!candidate) return undefined;
       // Old indices can be incomplete. Never invent a page for a recovered quote.
@@ -440,12 +493,15 @@ function vocabulary(): Word[] {
     const selected = found.examples[0];
     const occurrence = metadata(selected);
     const sentence = selected?.sentence || "";
-    const section = selected
-      ? repairTurkishText(selected.section.text, legacy)
-      : "";
+    if (selected && !repairedSections.has(selected.section.id))
+      repairedSections.set(
+        selected.section.id,
+        repairTurkishText(selected.section.text, legacy),
+      );
+    const section = selected ? repairedSections.get(selected.section.id)! : "";
     return {
       ...entry,
-      id: Number(row.vocabularyId),
+      id: Number(row.id),
       examples,
       sentence,
       section,
@@ -468,13 +524,60 @@ function vocabulary(): Word[] {
           : "",
       // Every word occurrence in the active source counts, even in excluded layouts.
       frequency: found.frequency,
-      status: String(row.status),
-      firstSeen: row.firstSeen as string | null,
-      lastReviewed: row.lastReviewed as string | null,
-      nextReview: row.nextReview as string | null,
-      reviewCount: Number(row.reviewCount),
-      rating: row.difficultyRating as string | null,
     };
+  });
+  const result = { words, progressIds };
+  const currentRevision = contentRevision();
+  // Newly recovered dictionary rows also change other books' global word list.
+  if (currentRevision !== revision) bookWords.clear();
+  if (bookWords.size >= 3) bookWords.delete(bookWords.keys().next().value!);
+  bookWords.set(active, result);
+  cachedContentRevision = currentRevision;
+  return result;
+}
+
+function vocabulary(): Word[] {
+  const book = one(
+    "SELECT b.* FROM Book b JOIN AppMeta m ON m.value=CAST(b.id AS TEXT) WHERE m.key='activeBook'",
+  );
+  if (!book) return [];
+  const content = sourceVocabulary(book);
+  // Progress is always read live: ratings, due dates, new days and changed daily
+  // goals must never be hidden by the source cache.
+  const progress = new Map(
+    all("SELECT * FROM LearningProgress WHERE userId=1").map((row) => [
+      Number(row.wordId),
+      row,
+    ]),
+  );
+  const missing = content.progressIds.filter((id) => !progress.has(id));
+  if (missing.length) {
+    const insert = db().prepare(
+      "INSERT OR IGNORE INTO LearningProgress(userId,wordId) VALUES (1,?)",
+    );
+    for (const id of missing) {
+      insert.run(id);
+      progress.set(
+        id,
+        one("SELECT * FROM LearningProgress WHERE userId=1 AND wordId=?", id),
+      );
+    }
+  }
+  return content.words.flatMap((word) => {
+    const row = progress.get(word.id);
+    return row
+      ? [
+          {
+            ...word,
+            status: String(row.status),
+            firstSeen: row.firstSeen as string | null,
+            lastReviewed: row.lastReviewed as string | null,
+            nextReview: row.nextReview as string | null,
+            reviewCount: Number(row.reviewCount),
+            rating: row.difficultyRating as string | null,
+          },
+        ]
+      : [];
   });
 }
 export function state(): State {
@@ -693,8 +796,7 @@ export function rate(id: number, rating: string) {
   }
 }
 export function reset() {
-  legacyBooks.clear();
-  sourceBooks.clear();
+  clearBookCaches();
   db().exec("BEGIN IMMEDIATE");
   try {
     db().exec(

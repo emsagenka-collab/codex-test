@@ -4,6 +4,10 @@ test("mobile import, daily lesson, persistence and all navigation", async ({
   page,
   request,
 }) => {
+  const health = await request.get("/api/health");
+  expect(health.ok()).toBe(true);
+  expect(health.headers()["cache-control"]).toBe("no-store");
+  expect(await health.json()).toEqual({ app: "kelime", ready: true });
   await request.post("/api/reset", { data: { confirm: "DELETE" } });
   await request.post("/api/settings", {
     data: { dailyWordCount: 2, level: "B2" },

@@ -16,7 +16,11 @@ import {
   matches,
 } from "./learning";
 import { checkTurkishOrthography } from "./orthography";
-import { hasLegacyTurkishGlyphs, repairTurkishText } from "./text-repair";
+import {
+  bookWordForms,
+  hasLegacyTurkishGlyphs,
+  repairTurkishText,
+} from "./text-repair";
 import type {
   Entry,
   Settings,
@@ -174,6 +178,7 @@ export function importBook(
   pages: SourcePage[] = [],
 ) {
   const legacy = !isDemo && hasLegacyTurkishGlyphs(text);
+  const documentForms = bookWordForms(text, legacy);
   const headers = detectRunningHeaders(text, legacy);
   const sections = splitSections(text);
   if (!sections.length)
@@ -198,26 +203,28 @@ export function importBook(
     if (start < 0) throw new Error("Quellenprüfung fehlgeschlagen.");
     sectionOffset = start + section.length;
     let sentenceOffset = 0;
-    return exampleSentences(section, legacy, headers).map((sentence) => {
-      const sentenceStart = section.indexOf(sentence, sentenceOffset);
-      sentenceOffset = sentenceStart + sentence.length;
-      const startOffset = start + sentenceStart;
-      const endOffset = startOffset + sentence.length - 1;
-      return {
-        section,
-        i,
-        sentence,
-        repairedSentence: repairTurkishText(sentence, legacy),
-        pageNumber:
-          pageRanges.find(
-            (page) => page.start <= startOffset && startOffset < page.end,
-          )?.pageNumber ?? null,
-        pageEnd:
-          pageRanges.find(
-            (page) => page.start <= endOffset && endOffset < page.end,
-          )?.pageNumber ?? null,
-      };
-    });
+    return exampleSentences(section, legacy, headers, documentForms).map(
+      (sentence) => {
+        const sentenceStart = section.indexOf(sentence, sentenceOffset);
+        sentenceOffset = sentenceStart + sentence.length;
+        const startOffset = start + sentenceStart;
+        const endOffset = startOffset + sentence.length - 1;
+        return {
+          section,
+          i,
+          sentence,
+          repairedSentence: repairTurkishText(sentence, legacy, documentForms),
+          pageNumber:
+            pageRanges.find(
+              (page) => page.start <= startOffset && startOffset < page.end,
+            )?.pageNumber ?? null,
+          pageEnd:
+            pageRanges.find(
+              (page) => page.start <= endOffset && endOffset < page.end,
+            )?.pageNumber ?? null,
+        };
+      },
+    );
   });
   const dictionary = [
     ...extra,
@@ -418,7 +425,6 @@ function vocabulary(): Word[] {
             ? String(occurrence.translation)
             : "",
       });
-      if (examples.length === 30) break;
     }
     const selected = found.examples[0];
     const occurrence = metadata(selected);

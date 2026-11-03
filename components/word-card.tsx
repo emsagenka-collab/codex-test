@@ -106,8 +106,12 @@ export default function WordCard({
               <span lang="tr">{w.related}</span>
             </p>
             <p>
-              <strong>Grundform:</strong> <span lang="tr">{w.word}</span> · Im
-              aktuellen Buch {w.frequency}× erkannt
+              <strong>Grundform:</strong> <span lang="tr">{w.word}</span> ·{" "}
+              <span title="Gezählt werden alle Wortvorkommen, auch mehrere im selben Satz und in Überschriften. Als Beispiele erscheinen nur unterschiedliche Sätze aus dem Fließtext.">
+                Im aktuellen Buch {w.frequency}× erkannt
+              </span>{" "}
+              · {w.examples.length}{" "}
+              {w.examples.length === 1 ? "Beispielsatz" : "Beispielsätze"}
             </p>
           </div>
         </details>

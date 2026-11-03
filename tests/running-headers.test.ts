@@ -30,7 +30,7 @@ test("repeated page decorations are removed from display while cross-page raw sp
   const word = indexBookSource(sections, false).forWord("sükûnet");
   assert.equal(word.frequency, 3);
   assert.equal(word.examples.length, 3);
-  assert.equal(word.examples[0].sentence, "Sükûnet içinde\nbekledi.");
+  assert.equal(word.examples[0].sentence, "Sükûnet içinde bekledi.");
   assert.ok(word.examples[0].raw.includes("Bir Kitap"));
   for (const example of word.examples) {
     assert.ok(example.section.text.includes(example.raw));

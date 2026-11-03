@@ -1,4 +1,4 @@
-import { repairPdfWordBreaks } from "./pdf-word-breaks";
+import { observedWordForms, repairPdfWordBreaks } from "./pdf-word-breaks";
 /** Older Turkish PDFs sometimes expose font character codes instead of Unicode.
  * Repairs are deterministic display/analysis transforms. Raw source stays intact.
  * Never infer missing words, punctuation, or historical content.
@@ -26,16 +26,12 @@ function repairLegacyGlyphs(
     if (!/\p{L}/u.test(token) || (token.startsWith("‹") && token.endsWith("›")))
       return token;
     // A currency symbol outside a word is not a font error.
-    let repaired = token.replace(/[€¤›‹ﬂﬁ]/gu, (glyph, offset: number) => {
-      if (
-        (glyph === "€" || glyph === "¤") &&
-        (offset === 0 || offset === token.length - 1)
-      )
-        return glyph;
-      return glyphs[glyph];
-    });
+    // A legacy letter can be the first/last glyph of a hyphenated fragment too.
+    // Standalone currency symbols were excluded above.
+    let repaired = token.replace(/[€¤›‹ﬂﬁ]/gu, (glyph) => glyphs[glyph]);
     // PDF.js previously normalized the legacy ligatures to ASCII fl/fi.
     // Restore only established Turkish stems, never every occurrence of "fl".
+    if (!/(?:fl|Fl|^fi)/u.test(repaired)) return repaired;
     const stems = [
       "şöyle",
       "komşu",
@@ -73,6 +69,12 @@ function repairLegacyGlyphs(
 export function repairTurkishText(
   text: string,
   legacy = hasLegacyTurkishGlyphs(text),
+  documentForms?: ReadonlySet<string>,
 ): string {
-  return repairPdfWordBreaks(repairLegacyGlyphs(text, legacy)).text;
+  return repairPdfWordBreaks(repairLegacyGlyphs(text, legacy), documentForms)
+    .text;
+}
+
+export function bookWordForms(text: string, legacy: boolean) {
+  return observedWordForms(repairLegacyGlyphs(text, legacy));
 }

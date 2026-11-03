@@ -5,10 +5,17 @@ import { sentences, tokens } from "./learning";
 // Conservative source selection: uncertainty should omit an example, not turn
 // a heading/list/table cell into a quote. This is not a full grammar parser.
 function hasPredicate(text: string) {
-  const words = tokens(text);
+  const words = tokens(text.replace(/\s*\([^()]*\)[.!?]*$/u, ""));
+  // Interrogative particles follow the predicate; they are not the predicate.
+  if (
+    /^m[ıiuü](?:y[ıiuü]m|s[ıiuü]n|y[ıiuü]z|s[ıiuü]n[ıiuü]z)?$/u.test(
+      words.at(-1) || "",
+    )
+  )
+    words.pop();
   const last = words.at(-1) || "";
   if (
-    /(?:dı|di|du|dü|[pçtkfhsş](?:tı|ti|tu|tü)|mış|miş|muş|müş|yor|acak|ecek|malı|meli|dır|dir|dur|dür|tır|tir|tur|tür|maz|mez)(?:m|n|k|ız|iz|uz|üz|nız|niz|nuz|nüz|lar|ler)?$/u.test(
+    /(?:dı|di|du|dü|[pçtkfhsş](?:tı|ti|tu|tü)|mış|miş|muş|müş|yor|acak|ecek|malı|meli|dır|dir|dur|dür|tır|tir|tur|tür|maz|mez)(?:m|n|k|[ıiuü]m|s[ıiuü]n|[ıiuü]z|s[ıiuü]n[ıiuü]z|nız|niz|nuz|nüz|lar|ler)?$/u.test(
       last,
     )
   )
@@ -23,14 +30,9 @@ function hasPredicate(text: string) {
   if (["var", "yok"].includes(last)) return true;
   if (/^(?:bu|şu|o|bunlar|şunlar|onlar|ben|sen|biz|siz)\b/iu.test(text.trim()))
     return true;
-  // A short imperative can be a complete prose sentence too.
-  return (
-    /[!?][”’"'»)]*$/u.test(text.trim()) &&
-    words.some((word) =>
-      /^(?:koru|koruyun|düşün|düşünün|unutma|unutmayın|sakın|bak|bakın|dinle|dinleyin)$/u.test(
-        word,
-      ),
-    )
+  // Explicit imperative/optative forms also occur in prose and dialogue.
+  return /^(?:koru|koruyun|düşün|düşünün|unutma|unutmayın|bak|bakın|dinle|dinleyin|et|edin|etsin|ol|olun|olsun|söyle|söyleyin|deme|demeyin|buyur|ver|verin|tut|tutun|yapayım|kalayım|korkutmayın|göstermeyin|eyleye|oku|örtün)$/u.test(
+    last,
   );
 }
 function contentStart(text: string) {
@@ -40,14 +42,16 @@ export function isListLine(text: string) {
   const line = contentStart(text);
   // A speech dash followed by an explicit reporting verb is dialogue, not a list.
   if (
-    /^[–—-]\s+\p{L}/u.test(line) &&
+    /^[–—-]\s+[„“"'«]*\p{L}/u.test(line) &&
     /(?:^|\s)(?:dedi|diyor|buyurdu|sordu|söyledi)[,;:.!?]?(?:\s|$)/u.test(line)
   )
     return false;
   return (
-    /^(?:\d+\s+)?(?:\(?[a-zçğıöşü][.)]{1,2}|\(?\d+(?:\.\d+)*[.)\-–:]|[IVXLCDM]+[.)\-–:]|[›»>→➜➤‣∙·●○◦◆◇▪▫*+•–—-]+(?:\s*[.)])?)\s*\S/iu.test(
+    /^(?:\d+\s+)?(?:\(?[a-zçğıöşü][.)]{1,2}|\(?\d+(?:\.\d+)*[.)\-–:](?!\d)|[›»>→➜➤‣∙·●○◦◆◇▪▫*+•–—-]+(?:\s*[.)])?)\s*\S/iu.test(
       line,
-    ) || /^[^\p{L}\p{N}\s(]/u.test(line)
+    ) ||
+    /^(?:\d+\s+)?[IVXLCDM]+[.)\-–:]\s*\S/u.test(line) ||
+    /^[^\p{L}\p{N}\s(]/u.test(line)
   );
 }
 export function isContentsText(text: string) {
@@ -84,6 +88,7 @@ function isHeadingOrIndex(text: string) {
   if (isListLine(line) || isTableLine(line)) return true;
   if (/^[\d\s\-–—.]+$/u.test(line) || /^[IVXLCDM]+[.)]?$/u.test(line))
     return true;
+  if (/^\([^()]+\)[:\s]*$/u.test(line) && !hasPredicate(line)) return true;
   if (/[.·…]{2,}\s*\d+(?:\s*[–-]\s*\d+)?\s*$/u.test(line)) return true;
   const words = tokens(line);
   if (
@@ -112,6 +117,7 @@ export function exampleSentences(
   section: string,
   legacy = hasLegacyTurkishGlyphs(section),
   headers = new Set<string>(),
+  documentForms?: ReadonlySet<string>,
 ): string[] {
   if (isContentsText(repairTurkishText(section, legacy))) return [];
   const result: string[] = [];
@@ -120,24 +126,52 @@ export function exampleSentences(
     let inTable = false;
     let paragraph: string[] = [];
     let inList = false;
+    let inHeading = false;
+    let speechHeading = false;
+    const repair = (text: string) =>
+      repairTurkishText(text, legacy, documentForms);
     function flush() {
       const raw = paragraph.join("\n");
       const masked = maskRunningHeaders(raw, headers, legacy);
       let cursor = 0;
-      for (const sentence of sentences(masked)) {
+      for (const part of sentences(masked)) {
+        // A source reference after the preceding sentence is not part of the
+        // next prose sentence. Keep its removal outside the stored raw source.
+        const sentence = part.replace(/^\([^()\n]*\)\s*\n\s*/u, "");
         const start = masked.indexOf(sentence, cursor);
         cursor = start + sentence.length;
         if (
           start >= 0 &&
-          isCompleteExample(repairTurkishText(sentence, legacy))
+          isCompleteExample(repair(sentence).replace(/^[–—-]\s+/u, ""))
         )
           result.push(raw.slice(start, cursor));
       }
       paragraph = [];
     }
     for (const line of lines) {
-      const analysis = repairTurkishText(line, legacy);
+      const analysis = repair(line);
       if (isRunningHeader(line, headers, legacy)) {
+        paragraph.push(line);
+        continue;
+      }
+      if (inHeading) {
+        const letters = analysis.replace(/[^\p{L}]/gu, "");
+        if (
+          letters &&
+          letters === letters.toLocaleUpperCase("tr-TR") &&
+          !(hasPredicate(analysis) && /[.!?][”’"'»)]*$/u.test(analysis.trim()))
+        )
+          continue;
+        inHeading = false;
+      }
+      // The next physical line may start with the end of a word ("di.", for
+      // example). It must not be interpreted as a new list marker or heading.
+      if (
+        !inList &&
+        !inTable &&
+        /\p{L}[ \t]*[-\u00ad][ \t]*$/u.test(repair(paragraph.at(-1) || "")) &&
+        /^\p{L}/u.test(analysis.trim())
+      ) {
         paragraph.push(line);
         continue;
       }
@@ -148,20 +182,39 @@ export function exampleSentences(
       }
       // Do not discard preceding prose merely because a table follows it.
       if (inTable) continue;
-      if (isListLine(analysis)) {
+      const speech =
+        /^[–—-]\s+[„“"'«]*\p{L}/u.test(analysis.trim()) &&
+        (speechHeading ||
+          /:\s*$/u.test(repair(paragraph.join("\n"))) ||
+          !isListLine(analysis));
+      if (isListLine(analysis) && !speech) {
         flush();
         // A chapter heading may immediately precede a wrapped prose paragraph.
         // List items, in contrast, also exclude their continuation lines.
-        inList = !(
-          !hasPredicate(analysis) &&
-          (/^(?:\d+\s+)?[IVXLCDM]+[.\-–—:]/u.test(contentStart(analysis)) ||
-            (() => {
-              const title = contentStart(analysis)
-                .replace(/^(?:\d+\s+)?(?:\(?[a-zçğıöşü][.)]{1,2})\s*/iu, "")
-                .replace(/[^\p{L}]/gu, "");
-              return !!title && title === title.toLocaleUpperCase("tr-TR");
-            })())
+        inHeading =
+          (!hasPredicate(analysis) &&
+            /^(?:\d+\s+)?[IVXLCDM]+[.\-–—:]/u.test(contentStart(analysis))) ||
+          (() => {
+            const title = contentStart(analysis)
+              .replace(/^(?:\d+\s+)?(?:\(?[a-zçğıöşü][.)]{1,2})\s*/iu, "")
+              .replace(/[^\p{L}]/gu, "");
+            return (
+              !!title &&
+              title === title.toLocaleUpperCase("tr-TR") &&
+              (!hasPredicate(analysis) ||
+                !/[.!?][”’"'»)]*$/u.test(analysis.trim()))
+            );
+          })();
+        inList = !inHeading;
+        speechHeading = /(?:SÖZE KARIŞTI|ŞÖYLE DEDİ|CEVAP VERDİ)[:\s]*$/u.test(
+          analysis,
         );
+        continue;
+      }
+      if (speech) inList = false;
+      if (!speech && isHeadingOrIndex(analysis) && !isListLine(analysis)) {
+        flush();
+        inList = false;
         continue;
       }
       if (inList) {
@@ -173,7 +226,7 @@ export function exampleSentences(
           continue;
         inList = false;
       }
-      if (isHeadingOrIndex(analysis)) flush();
+      if (!speech && isHeadingOrIndex(analysis)) flush();
       else paragraph.push(line);
     }
     flush();

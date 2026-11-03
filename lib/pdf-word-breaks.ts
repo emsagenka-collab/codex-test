@@ -72,6 +72,22 @@ const knownForms = new Set(
     "verdiklerini",
     "bilesiniz",
     "dinliyordu",
+    "buyur",
+    "demektedir",
+    "yağmuru",
+    "memurum",
+    "yapmıyorum",
+    "edebileceklerini",
+    "karısını",
+    "gitmemişti",
+    "komşularından",
+    "mükafata",
+    "müjdeleyin",
+    "torunum",
+    "sevgisiyle",
+    "zararına",
+    "parçalanan",
+    "tahsis",
   ].map(normalizeForm),
 );
 function normalizeForm(word: string) {
@@ -139,11 +155,37 @@ function validGap(gap: string) {
     gap,
   );
 }
-export function repairPdfWordBreaks(text: string): PdfWordBreakResult {
+/** Whole forms observed unbroken elsewhere in this document, scoped per book. */
+export function observedWordForms(text: string): ReadonlySet<string> {
+  return new Set(
+    [...text.matchAll(/\p{L}+(?:['’]\p{L}+)*/gu)]
+      .filter(
+        (match) =>
+          match[0].length >= 3 &&
+          !/[-\u00ad][ \t]*$/u.test(
+            text.slice(Math.max(0, match.index! - 4), match.index!),
+          ) &&
+          !/^[ \t]*[-\u00ad]/u.test(
+            text.slice(
+              match.index! + match[0].length,
+              match.index! + match[0].length + 4,
+            ),
+          ),
+      )
+      .map((match) => normalizeForm(match[0])),
+  );
+}
+export function repairPdfWordBreaks(
+  text: string,
+  documentForms: ReadonlySet<string> = new Set(),
+): PdfWordBreakResult {
   const tokens = [...text.matchAll(/\p{L}+(?:['’]\p{L}+)*/gu)];
+  const forms = tokens.map((token) => normalizeForm(token[0]));
   const repairs: WordBreakRepair[] = [];
   for (let i = 0; i < tokens.length; i++) {
     let candidate = tokens[i][0];
+    let candidateForm = forms[i];
+    let explicitBreak = false;
     let best: { last: number; replacement: string } | null = null;
     for (let j = i + 1; j < tokens.length && j < i + 4; j++) {
       const previous = tokens[j - 1];
@@ -152,16 +194,21 @@ export function repairPdfWordBreaks(text: string): PdfWordBreakResult {
         tokens[j].index!,
       );
       if (!validGap(gap)) break;
+      explicitBreak ||= /[-\u00ad]/u.test(gap);
       candidate += tokens[j][0];
+      candidateForm += forms[j];
       // Both independently meaningful words may legitimately be separate.
       if (
         j === i + 1 &&
         !/[-\u00ad]/u.test(gap) &&
-        standalone.has(normalizeForm(tokens[i][0])) &&
-        standalone.has(normalizeForm(tokens[j][0]))
+        standalone.has(forms[i]) &&
+        standalone.has(forms[j])
       )
         continue;
-      if (knownForms.has(normalizeForm(candidate)))
+      if (
+        knownForms.has(candidateForm) ||
+        (explicitBreak && documentForms.has(candidateForm))
+      )
         best = { last: j, replacement: candidate };
     }
     if (best) {

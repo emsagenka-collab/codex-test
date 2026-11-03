@@ -51,10 +51,10 @@ export function splitSections(text: string) {
     .replace(/\r\n/g, "\n")
     .split(/\n\s*\n/)
     .flatMap((p) => {
-      const sentences = p.trim().match(/[^.!?]+(?:[.!?]+[”’"»]?|$)/gu) || [];
+      const parts = sentenceParts(p.trim());
       const groups: string[] = [];
       let current = "";
-      for (const s of sentences) {
+      for (const s of parts) {
         if (current.length + s.length > 2400 && current) {
           groups.push(current.trim());
           current = "";
@@ -67,9 +67,25 @@ export function splitSections(text: string) {
     .filter((p) => p.length > 0);
 }
 export function sentences(section: string) {
-  return (section.match(/[^.!?]+(?:[.!?]+[”’"»]?|$)/gu) || [section])
+  return sentenceParts(section)
     .map((x) => x.trim())
     .filter(Boolean);
+}
+function sentenceParts(text: string): string[] {
+  // Mask abbreviation/number dots at equal length so returned spans remain
+  // verbatim, including PDF line breaks and page decorations.
+  const protectedText = text
+    .replace(
+      /\b(?:Hz|Dr|Prof|Doç|Av|Sn|vb|vs|bk|örn|s\.a\.s|a\.s|r\.a|b)\./giu,
+      (abbreviation) => abbreviation.replaceAll(".", "\uff0e"),
+    )
+    .replace(
+      /\b\p{Lu}\.(?=\s+\p{Lu})|(?<=\d)\.(?=\d|\s+\p{Ll})|\b[IVXLCDM]+\.(?=\s+\p{L})/gu,
+      (numberOrInitial) => numberOrInitial.replaceAll(".", "\uff0e"),
+    );
+  return [...protectedText.matchAll(/[^.!?]+(?:[.!?]+[”’"'»)]*|$)/gu)].map(
+    (match) => text.slice(match.index!, match.index! + match[0].length),
+  );
 }
 export function schedule(rating: string, reviewCount: number, today: string) {
   const intervals: Record<string, number> = {

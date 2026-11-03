@@ -81,7 +81,7 @@ test("PDF pages stay attached to the exact occurrence, including repeated and co
     const spanning = state().vocabulary.find((w) => w.word === "emanet")!;
     assert.equal(spanning.pageNumber, 1);
     assert.equal(spanning.pageEnd, 2);
-    assert.match(spanning.sentence, /korumayı\nöğrendi/);
+    assert.match(spanning.sentence, /korumayı öğrendi/);
     assert.equal(JSON.stringify(exportData().progress), progress);
 
     const plain = await extractDocument(

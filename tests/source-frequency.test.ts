@@ -77,7 +77,7 @@ test("35 book mentions stay 35 despite a sparse old sentence index; examples rec
     const current = state();
     const word = current.vocabulary.find((word) => word.id === tefekkur.id)!;
     assert.equal(word.frequency, 35);
-    assert.equal(word.examples.length, 30);
+    assert.equal(word.examples.length, 32);
     assert.equal(word.demoBook, false);
     assert.equal(word.source, "Mein vollständiges Buch");
     assert.ok(
@@ -85,7 +85,7 @@ test("35 book mentions stay 35 despite a sparse old sentence index; examples rec
         (example) => !example.demoBook && example.source === word.source,
       ),
     );
-    assert.equal(word.examples[0].sentence, sentences[0]);
+    assert.equal(word.examples[0].sentence, sentences[0].replace(/\s+/gu, " "));
     assert.equal(word.examples[0].pageNumber, 2);
     assert.equal(word.examples[1].pageNumber, null); // Never guess missing old metadata.
     assert.ok(
@@ -104,7 +104,7 @@ test("35 book mentions stay 35 despite a sparse old sentence index; examples rec
     );
     assert.equal(
       new Set(word.examples.map((example) => example.sentence)).size,
-      30,
+      32,
     );
     assert.equal(word.rating, "hard");
     assert.equal(JSON.stringify(exportData().progress), progress);

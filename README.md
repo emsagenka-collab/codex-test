@@ -69,12 +69,23 @@ Wiederkehrende Seitenköpfe werden anhand mehrerer nummerierter Vorkommen erkann
 bei der Satzanalyse ausgeblendet und aus der Anzeige entfernt; die Rohtextspanne
 bleibt unverändert. Dadurch bleiben auch Sätze über Seitenwechsel hinweg
 verwendbar. Blocksatz mit Tabulatoren ist allein kein Tabellenbeweis.
+Die Regeln gelten für jedes Wörterbuchwort gleichermaßen. Dialoge nach einer
+Redeeinleitung und mehrzeilige Sätze bleiben erhalten. Abkürzungen wie `Hz.` und
+Ordnungszahlen wie `II. yılında` zerlegen einen Satz nicht. Ein bloßes Listenzeichen
+wird weiterhin nicht als Dialog behandelt.
+PDF-Worttrennungen werden für bekannte ganze Wortformen zusammengezogen. Neben
+den hinterlegten Formen dienen ungetrennte Schreibungen desselben Buches als
+Nachweis für Trennstriche am Zeilenende (etwa `hicret-\nten → hicretten`).
+Unbekannte Zusammensetzungen und echte Bindestriche werden nicht blind entfernt;
+Absatzgrenzen und Apostrophe bleiben erhalten. Die Anzeige glättet Zeilenumbrüche
+und Blocksatzabstände, während Rohtext und Quellenpositionen unverändert bleiben.
 Neue Importe behalten auch kurze Quellabsätze für die Zählung.
 Wiederhergestellte alte Sätze bekommen nur dann PDF-Seiten, wenn diese sicher
 zugeordnet werden können; fehlende Seiten lassen sich durch erneuten Import erfassen.
 
-Pro Wort stehen bis zu 30 unterschiedliche, belegte Beispielsätze aus demselben
-Quellbuch bereit. Mit den kleinen Pfeilen rechts oben in der Beispielbox wechselt
+Pro Wort stehen alle erkannten unterschiedlichen, belegten Beispielsätze aus
+demselben Quellbuch bereit; es gibt keine feste Grenze von 30 Beispielen.
+Mit den kleinen Pfeilen rechts oben in der Beispielbox wechselt
 der Satz mit einem gerichteten Schiebeübergang; Abschnitt und PDF-Seite wechseln
 passend mit. Identische Sätze erscheinen nur einmal. Bei nur einem verfügbaren
 Beispiel sind die Pfeile deaktiviert. Links-/Rechts-Pfeiltasten werden in der

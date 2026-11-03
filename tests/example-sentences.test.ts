@@ -15,6 +15,7 @@ test("chapter titles, table-of-contents entries and fragments are not learning e
     "49",
     "VII.",
     "Hicret ederken yolda",
+    "(Hicret’in ikinci yılı, Ramazan ayı)",
     "a) Habeşistan’a hicret edenler.",
     "a) Habeşistan’a hicret edenler .",
     "b) Habeşistan’a hicret edenler",

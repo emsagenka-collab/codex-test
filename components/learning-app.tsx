@@ -774,6 +774,20 @@ export default function LearningApp() {
                   books={data.books || []}
                   busy={busy}
                   onImport={() => setModal("import")}
+                  onDelete={async (id) => {
+                    const deleted = await act(
+                      "delete-book",
+                      { id, confirm: "DELETE" },
+                      "Das Buch wurde aus deiner Bibliothek gelöscht.",
+                    );
+                    if (deleted) {
+                      setDetail(null);
+                      setReviewed([]);
+                      setReviewId(null);
+                      setFlipped(false);
+                    }
+                    return deleted;
+                  }}
                   onLearn={() => navigate("today")}
                   onSelect={async (id) => {
                     if (

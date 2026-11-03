@@ -1070,6 +1070,42 @@ details[open] > summary > svg {
 .library-empty .primary {
   margin-top: 15px;
 }
+.library-delete {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 44px;
+  margin-top: 10px;
+  padding: 8px 0;
+  color: #a37460;
+  font-size: 12px;
+}
+.library-delete:hover {
+  text-decoration: underline;
+}
+.book-delete-confirm {
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+}
+.book-delete-confirm p {
+  color: var(--muted);
+}
+.book-delete-confirm strong {
+  color: var(--ink);
+}
+.book-delete-actions {
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 25px;
+}
+.book-delete-submit {
+  background: #945541;
+}
+.book-delete-submit:hover {
+  background: #7b4635;
+}
 @media (max-width: 600px) {
   .library-intro {
     flex-direction: column;

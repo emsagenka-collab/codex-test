@@ -420,6 +420,46 @@ export function selectBook(id: number) {
     .prepare("INSERT OR REPLACE INTO AppMeta VALUES ('activeBook',?)")
     .run(String(id));
 }
+export function deleteBook(id: number) {
+  if (!Number.isSafeInteger(id) || id < 1)
+    throw new Error("Dieses Buch wurde in deiner Bibliothek nicht gefunden.");
+  db().exec("BEGIN IMMEDIATE");
+  try {
+    if (!one("SELECT id FROM Book WHERE id=?", id))
+      throw new Error("Dieses Buch wurde in deiner Bibliothek nicht gefunden.");
+    const wasActive =
+      Number(one("SELECT value FROM AppMeta WHERE key='activeBook'")?.value) ===
+      id;
+    db()
+      .prepare(
+        "DELETE FROM WordOccurrence WHERE sectionId IN (SELECT id FROM TextSection WHERE bookId=?)",
+      )
+      .run(id);
+    db().prepare("DELETE FROM TextSection WHERE bookId=?").run(id);
+    db()
+      .prepare("DELETE FROM DailySelections WHERE scope LIKE ?")
+      .run(`${id}:%`);
+    db().prepare("DELETE FROM DailyWords WHERE scope LIKE ?").run(`${id}:%`);
+    db().prepare("DELETE FROM Book WHERE id=?").run(id);
+    // Word ratings and activity are shared across books and remain available
+    // when the same word occurs in another book or is imported again later.
+    if (wasActive) {
+      const next = one(
+        "SELECT id FROM Book ORDER BY isDemo,importedAt DESC,id DESC LIMIT 1",
+      );
+      if (next)
+        db()
+          .prepare("INSERT OR REPLACE INTO AppMeta VALUES ('activeBook',?)")
+          .run(String(next.id));
+      else db().prepare("DELETE FROM AppMeta WHERE key='activeBook'").run();
+    }
+    db().exec("COMMIT");
+  } catch (e) {
+    db().exec("ROLLBACK");
+    throw e;
+  }
+  clearBookCaches();
+}
 function sourceVocabulary(book: Record<string, unknown>) {
   const active = Number(book.id);
   const revision = contentRevision();

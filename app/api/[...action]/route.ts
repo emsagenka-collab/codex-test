@@ -6,6 +6,7 @@ import {
   importBook,
   loadDemo,
   selectBook,
+  deleteBook,
   reset,
   exportData,
 } from "@/lib/db";
@@ -78,6 +79,12 @@ export async function POST(
     const { action } = await params;
     let result: unknown = {};
     switch (action[0]) {
+      case "delete-book": {
+        const body = await request.json();
+        if (body.confirm !== "DELETE") throw new Error("Bestätigung fehlt.");
+        deleteBook(Number(body.id));
+        break;
+      }
       case "book": {
         const body = await request.json();
         selectBook(Number(body.id));

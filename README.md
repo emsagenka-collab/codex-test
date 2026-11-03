@@ -81,6 +81,9 @@ Das aktive Buch ist markiert; seine Originalbeispiele bilden die Grundlage für
 Tageslektion und Wiederholung. Beim Wechsel bleiben Wortbewertungen erhalten.
 Tagesauswahlen werden je Buch, Niveau und Datum gespeichert, sodass die Rückkehr
 zu einem Buch auch bereits bewertete Karten derselben Lektion bewahrt.
+Bücher lassen sich mit Bestätigung einzeln löschen. Ihre Textstellen und Tagesauswahlen
+werden entfernt; gemeinsame Wortbewertungen und der Lernverlauf bleiben erhalten.
+Beim Löschen des aktiven Buchs wird ein verbleibendes Buch ausgewählt.
 Sicherungen enthalten die aktive Buch-ID und diese Auswahlen als optionale
 Zusatzfelder; ältere Sicherungen bleiben kompatibel.
 

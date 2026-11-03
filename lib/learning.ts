@@ -38,6 +38,8 @@ const historicalForms: Record<string, string[]> = {
   mürşit: ["mürşid"],
   itikat: ["itikad"],
   şehadet: ["şahadet"],
+  akait: ["akaid"],
+  züht: ["zühd"],
 };
 const vowelLoss: Record<string, string> = {
   akıl: "akl",

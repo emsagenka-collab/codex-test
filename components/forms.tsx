@@ -151,6 +151,7 @@ export function ImportForm({
 export function SettingsForm({
   settings,
   levelCounts,
+  dictionaryCounts,
   busy,
   onSave,
   onImport,
@@ -159,6 +160,7 @@ export function SettingsForm({
 }: {
   settings: Settings;
   levelCounts: State["levelCounts"];
+  dictionaryCounts: State["dictionaryCounts"];
   busy: boolean;
   onSave: (s: Settings) => Promise<void>;
   onImport: () => void;
@@ -214,10 +216,14 @@ export function SettingsForm({
           <option value="C1">C1 · Sehr anspruchsvoll</option>
         </select>
       </label>
+      <p className="muted" aria-label="Offline-Wörterbuch nach Niveau">
+        Offline-Wörterbuch: B1: {dictionaryCounts.B1} · B2:{" "}
+        {dictionaryCounts.B2} · C1: {dictionaryCounts.C1}.
+      </p>
       <p className="muted" aria-label="Lernwortschatz im aktuellen Buch">
-        Lernwörter in deinem Buch: B1: {levelCounts.B1} · B2: {levelCounts.B2} ·
-        C1: {levelCounts.C1}. Die Stufen sind eine Orientierung für die
-        Wortschwierigkeit.
+        Davon in deinem Buch mit Beispielsätzen: B1: {levelCounts.B1} · B2:{" "}
+        {levelCounts.B2} · C1: {levelCounts.C1}. Die Stufen sind eine
+        Orientierung für die Wortschwierigkeit.
       </p>
       <label className="setting-field">
         Darstellung

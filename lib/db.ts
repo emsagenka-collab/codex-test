@@ -4,7 +4,12 @@ import { exampleSentences } from "./example-sentences";
 import { DatabaseSync } from "node:sqlite";
 import { mkdirSync } from "node:fs";
 import path from "node:path";
-import { learningLexicon, lexicon, demoText } from "./lexicon";
+import {
+  learningLexicon,
+  lexicon,
+  demoText,
+  offlineLevelCounts,
+} from "./lexicon";
 import {
   addDays,
   dayKey,
@@ -601,6 +606,7 @@ export function state(): State {
   return {
     today,
     levelCounts,
+    dictionaryCounts: offlineLevelCounts,
     levelProgress: {
       level: config.level,
       total: levelWords.length,

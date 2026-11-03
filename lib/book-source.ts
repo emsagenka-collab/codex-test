@@ -21,7 +21,10 @@ export function indexBookSource(sections: SourceSection[], legacy: boolean) {
     legacy,
   );
   const tokenCounts = new Map<string, number>();
-  const excerpts: { example: SourceExample; words: string[] }[] = [];
+  // Index quotes once, instead of rescanning every word of every quote for
+  // every dictionary entry. Keep source order and distinct raw occurrences.
+  const examplesByToken = new Map<string, SourceExample[]>();
+  const sourceOrder = new Map<SourceExample, number>();
   for (const section of sections) {
     const repaired = repairTurkishText(section.text, legacy, documentForms);
     for (const token of tokens(repaired))
@@ -45,18 +48,26 @@ export function indexBookSource(sections: SourceSection[], legacy: boolean) {
         .replace(/(?<=\p{L})[ \t]*-[ \t]*\r?\n[ \t]*(?=\p{L})/gu, "-")
         .replace(/\s+/gu, " ")
         .trim();
-      excerpts.push({
-        example: {
-          id: `section-${section.id}-${start}`,
-          section,
-          raw,
-          sentence,
-          start,
-        },
-        words: [...new Set(tokens(sentence))],
-      });
+      const example: SourceExample = {
+        id: `section-${section.id}-${start}`,
+        section,
+        raw,
+        sentence,
+        start,
+      };
+      sourceOrder.set(example, sourceOrder.size);
+      for (const token of new Set(tokens(sentence))) {
+        if (!examplesByToken.has(token)) examplesByToken.set(token, []);
+        examplesByToken.get(token)!.push(example);
+      }
     }
   }
+  // Cleaned display quotes can contain repaired words that were split by a
+  // running page header in the raw section. Retain their example lookup too.
+  const indexedTokens = new Set([
+    ...tokenCounts.keys(),
+    ...examplesByToken.keys(),
+  ]);
   const cache = new Map<
     string,
     { frequency: number; examples: SourceExample[] }
@@ -67,13 +78,18 @@ export function indexBookSource(sections: SourceSection[], legacy: boolean) {
       if (!cache.has(key)) {
         const matches = wordMatcher(key);
         let frequency = 0;
-        for (const [token, count] of tokenCounts)
-          if (matches(token)) frequency += count;
+        const examples = new Set<SourceExample>();
+        for (const token of indexedTokens) {
+          if (!matches(token)) continue;
+          frequency += tokenCounts.get(token) || 0;
+          for (const example of examplesByToken.get(token) || [])
+            examples.add(example);
+        }
         cache.set(key, {
           frequency,
-          examples: excerpts
-            .filter(({ words }) => words.some(matches))
-            .map(({ example }) => example),
+          examples: [...examples].sort(
+            (a, b) => sourceOrder.get(a)! - sourceOrder.get(b)!,
+          ),
         });
       }
       return cache.get(key)!;

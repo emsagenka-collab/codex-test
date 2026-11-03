@@ -5,7 +5,9 @@ test("mobile import, daily lesson, persistence and all navigation", async ({
   request,
 }) => {
   await request.post("/api/reset", { data: { confirm: "DELETE" } });
-  await request.post("/api/settings", { data: { dailyWordCount: 2 } });
+  await request.post("/api/settings", {
+    data: { dailyWordCount: 2, level: "B2" },
+  });
   const browserErrors: string[] = [];
   page.on("pageerror", (e) => browserErrors.push(e.message));
   await page.setViewportSize({ width: 390, height: 844 });
@@ -328,7 +330,9 @@ test("sentence carousel changes examples and PDF pages, keeps ratings and suppor
   request,
 }) => {
   await request.post("/api/reset", { data: { confirm: "DELETE" } });
-  await request.post("/api/settings", { data: { dailyWordCount: 1 } });
+  await request.post("/api/settings", {
+    data: { dailyWordCount: 1, level: "B2" },
+  });
   const imported = await request.post("/api/import", {
     multipart: {
       file: {
@@ -527,7 +531,7 @@ test("extended book vocabulary fills both categories and shows actual level coun
   });
   expect(await imported.json()).toHaveProperty("ok", true);
   const data = await (await request.get("/api/state")).json();
-  expect(data.levelCounts).toEqual({ B1: 1, B2: 8, C1: 4 });
+  expect(data.levelCounts).toEqual({ B1: 4, B2: 8, C1: 4 });
   await page.setViewportSize({ width: 320, height: 740 });
   await page.goto("/");
   await expect(page.locator("article.word-card")).toHaveCount(4);
@@ -537,6 +541,13 @@ test("extended book vocabulary fills both categories and shows actual level coun
   await expect(
     page.getByLabel("Lernwortschatz im aktuellen Buch"),
   ).toContainText("B2: 8");
+  const catalog = page.getByLabel("Offline-Wörterbuch nach Niveau");
+  for (const level of ["B1", "B2", "C1"]) {
+    expect(data.dictionaryCounts[level]).toBeGreaterThanOrEqual(500);
+    await expect(catalog).toContainText(
+      `${level}: ${data.dictionaryCounts[level]}`,
+    );
+  }
   await expect(
     page.getByLabel("Lernwortschatz im aktuellen Buch"),
   ).toContainText("C1: 4");

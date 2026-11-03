@@ -1,4 +1,5 @@
 import type { Entry } from "./types";
+import { expandedVocabulary } from "./vocabulary";
 
 // Authored learning definitions, not quotations or official CEFR word lists.
 // These entries intentionally have no invented source sentence or translation.
@@ -2639,8 +2640,8 @@ const rows: Row[] = [
   ],
 ];
 
-export const bookVocabulary: Entry[] = rows.map(
-  ([word, difficulty, meaning, explanation, modern, related]) => ({
+export const bookVocabulary: Entry[] = [
+  ...rows.map(([word, difficulty, meaning, explanation, modern, related]) => ({
     word,
     difficulty,
     meaning,
@@ -2654,5 +2655,6 @@ export const bookVocabulary: Entry[] = rows.map(
     demo: "",
     translation: "",
     context: "",
-  }),
-);
+  })),
+  ...expandedVocabulary,
+];

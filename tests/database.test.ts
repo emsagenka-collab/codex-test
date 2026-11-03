@@ -55,7 +55,8 @@ test("source provenance, stable daily selection, real imports, and persisted rat
     const imported = records.occurrences.filter((o) =>
       ids.includes(o.sectionId),
     );
-    assert.equal(imported.length, 2);
+    // The expanded catalog also recognizes karar, önemli, bütün and engel.
+    assert.equal(imported.length, 6);
     imported.forEach((o) => {
       assert.ok(text.includes(String(o.sentence)));
       assert.equal(o.translation, "");
@@ -84,7 +85,7 @@ test("source provenance, stable daily selection, real imports, and persisted rat
     t.mock.timers.reset();
     const raw =
       "Emaneti do€ru korumay›, komﬂularla paylaﬂmay› ö€rendi.\n\nTefekkür ederken haklar›n› düﬂündü.";
-    const learningBefore = JSON.stringify(exportData().progress);
+    const learningBefore = exportData().progress;
 
     const legacy = importBook("Ältere PDF-Schrift", raw);
     const displayed = state();
@@ -94,7 +95,12 @@ test("source provenance, stable daily selection, real imports, and persisted rat
       /doğru korumayı, komşularla paylaşmayı öğrendi/,
     );
     assert.match(emanet.originalSentence!, /do€ru/);
-    assert.equal(JSON.stringify(exportData().progress), learningBefore);
+    assert.deepEqual(
+      exportData().progress.filter((row) =>
+        learningBefore.some((old) => old.wordId === row.wordId),
+      ),
+      learningBefore,
+    );
     assert.ok(
       state().daily.every((word) => word.source === "Ältere PDF-Schrift"),
     );
@@ -110,7 +116,7 @@ test("source provenance, stable daily selection, real imports, and persisted rat
       state().vocabulary.find((w) => w.word === "emanet")!.sentence,
       /doğru/,
     );
-    const progressSnapshot = JSON.stringify(exportData().progress);
+    const progressSnapshot = exportData().progress;
 
     const splitRaw =
       "Peygambe rimiz’in emaneti koruduğunu dinliyordu.\n\nTefek-\nkür ederken herşey hazırdı.";
@@ -126,7 +132,12 @@ test("source provenance, stable daily selection, real imports, and persisted rat
       "Tefekkür ederken her şey hazırdı.",
     );
     assert.equal(reflection.sentence, "Tefekkür ederken herşey hazırdı.");
-    assert.equal(JSON.stringify(exportData().progress), progressSnapshot);
+    assert.deepEqual(
+      exportData().progress.filter((row) =>
+        progressSnapshot.some((old) => old.wordId === row.wordId),
+      ),
+      progressSnapshot,
+    );
     assert.ok(
       state().daily.every((word) => word.source === "Getrennte PDF-Wörter"),
     );

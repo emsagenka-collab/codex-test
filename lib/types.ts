@@ -83,6 +83,7 @@ export type State = {
     nextLevel: string | null;
   };
   levelCounts: { B1: number; B2: number; C1: number };
+  dictionaryCounts: { B1: number; B2: number; C1: number };
   stats: { total: number; week: number; streak: number; studiedToday: number };
   settings: Settings;
   onboarded: boolean;

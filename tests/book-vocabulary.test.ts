@@ -16,13 +16,24 @@ import {
 } from "../lib/db";
 
 test("the extended offline dictionary has distinct teaching entries without fabricated book examples", () => {
-  assert.ok(learningLexicon.length >= 300);
+  for (const level of [1, 2, 3]) {
+    const entries = learningLexicon.filter(
+      (entry) => entry.difficulty === level,
+    );
+    assert.ok(entries.length >= 500, `Level ${level}: ${entries.length}`);
+  }
   assert.equal(
     new Set(learningLexicon.map((e) => normalize(e.word))).size,
     learningLexicon.length,
   );
   for (const entry of learningLexicon) {
     assert.ok([1, 2, 3].includes(entry.difficulty), entry.word);
+    assert.equal(
+      entry.word,
+      entry.word.normalize("NFC").toLocaleLowerCase("tr-TR"),
+    );
+    assert.match(entry.word, /^\p{L}+$/u);
+    assert.ok(entry.explanation.length >= 20, entry.word);
     for (const field of [
       entry.meaning,
       entry.explanation,
@@ -51,6 +62,8 @@ test("vowel-loss stems, possessive endings and historical spellings match bounde
     ["tevbe", "tövbe"],
     ["ashab", "ashap"],
     ["mürşidler", "mürşit"],
+    ["akaid", "akait"],
+    ["zühd", "züht"],
   ])
     assert.equal(matches(token, word), true, `${token} / ${word}`);
   for (const [token, word] of [
@@ -114,7 +127,7 @@ test("an old book gains new B2 and C1 words without reimport, replacing ratings 
     );
     assert.ok(upgraded.levelCounts.B2 >= 8);
     assert.equal(upgraded.levelCounts.C1, 4);
-    assert.equal(upgraded.levelCounts.B1, 1);
+    assert.equal(upgraded.levelCounts.B1, 4);
     assert.equal(upgraded.levelProgress.total, upgraded.levelCounts.B2);
     const words = exportData().words.map((row) => JSON.parse(String(row.data)));
     assert.ok(words.some((word) => word.word === "fazilet"));

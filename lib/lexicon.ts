@@ -320,3 +320,8 @@ export const demoText = lexicon.map((e) => e.demo).join("\n\n");
 // Keep the authored 24-word demo separate from the expandable book dictionary.
 export const learningLexicon: Entry[] = [...lexicon, ...bookVocabulary];
 export const offlineWordCount = learningLexicon.length;
+export const offlineLevelCounts = {
+  B1: learningLexicon.filter((entry) => entry.difficulty === 1).length,
+  B2: learningLexicon.filter((entry) => entry.difficulty === 2).length,
+  C1: learningLexicon.filter((entry) => entry.difficulty === 3).length,
+};

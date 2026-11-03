@@ -11,10 +11,10 @@ test("every dictionary word receives all suitable prose examples, including dial
     const split = `${word.slice(0, breakAt)}-\n${word.slice(breakAt)}`;
     const texts = [
       `a) ${word.toLocaleUpperCase("tr-TR")}\nHz. Deniz, ${word} hakkında konuştu.`,
-      `Öğretmeni şöyle dedi:\n– “Bugün ${word} hakkında\nkonuşacağız,” dedi.`,
-      `a) YOLCULAR VE YAHUDİLER\nBİRLEŞİYOR:\nO gün ${split} hakkında uzun uzun düşündü.`,
+      `Ece şöyle dedi:\n– “Bugün ${word} hakkında\nkonuşacağız,” dedi.`,
+      `a) TOPLANANLAR VE YAHUDİLER\nBİRLEŞİYOR:\nO gün ${split} hakkında uzun uzun düşündü.`,
       `O gün ${word} hakkında konuştu mu?`,
-      `• ${word} hakkında konuştu.\n\na) Başka bir ${word} konusu.`,
+      `• ${word}.\n\na) ${word}.`,
     ];
     const index = indexBookSource(
       texts.map((text, i) => ({ id: i + 1, sectionNumber: i + 1, text })),

@@ -45,7 +45,10 @@ export function indexBookSource(sections: SourceSection[], legacy: boolean) {
         documentForms,
       )
         // A retained compound hyphen stays a hyphen across a line wrap.
-        .replace(/(?<=\p{L})[ \t]*-[ \t]*\r?\n[ \t]*(?=\p{L})/gu, "-")
+        .replace(
+          /(?<=\p{L})[ \t]*([-\u2010])[ \t]*\r?\n[ \t]*(?=\p{L})/gu,
+          "$1",
+        )
         .replace(/\s+/gu, " ")
         .trim();
       const example: SourceExample = {
@@ -73,6 +76,8 @@ export function indexBookSource(sections: SourceSection[], legacy: boolean) {
     { frequency: number; examples: SourceExample[] }
   >();
   return {
+    repairText: (text: string) =>
+      repairTurkishText(text, legacy, documentForms),
     forWord(word: string) {
       const key = normalize(word);
       if (!cache.has(key)) {

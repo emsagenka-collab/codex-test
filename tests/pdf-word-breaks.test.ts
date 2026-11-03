@@ -58,11 +58,55 @@ test("document-attested whole forms repair explicit line-end hyphens across arbi
     "Türk-\nAlman",
     "Muhammedü’l-\nEmin",
     "Kureyşli-\n\nlerin",
-    "bilin-\nmeyen",
+    "qzxv-\nabcxyz",
     "her gün",
     "Kureyş-lilerin",
   ])
     assert.equal(repairPdfWordBreaks(text, forms).text, text);
   assert.equal(source.includes("Ku-\nreyşlilerin"), true);
   assert.equal(repairTurkishText("ya€-\nmuru", true), "yağmuru");
+});
+
+test("the offline word-form inventory repairs inflected words at different line and syllable breaks", () => {
+  assert.equal(
+    repairPdfWordBreaks("gös-\nte-\nril-\nmiş-\nti").text,
+    "gösterilmişti",
+  );
+  for (const word of [
+    "beraberdi",
+    "gösteriyor",
+    "gösterilmişti",
+    "bayrağını",
+    "verdikleri",
+    "bilinmeyen",
+  ]) {
+    for (let at = 1; at < word.length; at++) {
+      for (const gap of ["-\n", "-\r\n  ", "‐\n", "\u00ad\n", "- "]) {
+        const raw = word.slice(0, at) + gap + word.slice(at);
+        const repaired = repairPdfWordBreaks(raw);
+        assert.equal(repaired.text, word, raw);
+        assert.equal(repaired.repairs[0].original, raw);
+        assert.equal(repairPdfWordBreaks(repaired.text).text, word);
+      }
+    }
+  }
+});
+
+test("word-form lookup never broadens repairs to arbitrary spaces, inline compounds or paragraphs", () => {
+  for (const raw of [
+    "bera berdi",
+    "bera-berdi",
+    "göste riyor",
+    "bilin-\n\nmeyen",
+    "qzxv-\nabcxyz",
+    "Türk-İslam",
+    "Harem-i Şerif",
+    "Türk‑Alman",
+  ])
+    assert.equal(repairPdfWordBreaks(raw).text, raw, raw);
+  const forms = observedWordForms("Mescid-i Nebi ve Harem-i Şerif anıldı.");
+  for (const raw of ["Mescid-\ni Nebi", "Harem-\ni Şerif"])
+    assert.equal(repairPdfWordBreaks(raw, forms).text, raw);
+  const proper = observedWordForms("Mekke’ye gitti.");
+  assert.equal(repairPdfWordBreaks("Mek-\nke", proper).text, "Mekke");
 });

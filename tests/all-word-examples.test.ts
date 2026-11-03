@@ -74,3 +74,23 @@ test("thousands and decimals at the start of prose are not numbered lists", () =
     [],
   );
 });
+
+test("all learning words use repaired inflected prose and omit unverified damaged sentences", () => {
+  const text =
+    "Harp sırasında bera-\nberdi. Sonra merhamet göste-\nriyordu.\n\nHarp sırasında qzxv-\nabcxyz gördü.\n\nTürk-\nAlman ilişkilerinde merhamet gösterdi.";
+  const source = indexBookSource([{ id: 1, sectionNumber: 1, text }], false);
+  const war = source.forWord("harp");
+  assert.equal(war.examples.length, 1);
+  assert.equal(war.examples[0].sentence, "Harp sırasında beraberdi.");
+  assert.ok(war.examples[0].raw.includes("bera-\nberdi"));
+  assert.equal(war.frequency, 2);
+  const mercy = source.forWord("merhamet");
+  assert.deepEqual(
+    mercy.examples.map((e) => e.sentence),
+    [
+      "Sonra merhamet gösteriyordu.",
+      "Türk-Alman ilişkilerinde merhamet gösterdi.",
+    ],
+  );
+  assert.ok(text.includes(mercy.examples[0].raw));
+});

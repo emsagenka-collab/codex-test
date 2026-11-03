@@ -104,9 +104,21 @@ wird weiterhin nicht als Dialog behandelt.
 PDF-Worttrennungen werden für bekannte ganze Wortformen zusammengezogen. Neben
 den hinterlegten Formen dienen ungetrennte Schreibungen desselben Buches als
 Nachweis für Trennstriche am Zeilenende (etwa `hicret-\nten → hicretten`).
+Zusätzlich prüft ein komprimiertes Offline-Inventar aus dem MIT-lizenzierten
+türkischen Hunspell-Wörterbuch ausdrücklich hinterlegte Wortformen und ihre
+zugeordneten Endungen. Dadurch werden auch Formen wie `bera-\nberdi → beraberdi`
+und `göste-\nriyor → gösteriyor` erkannt, ohne einzelne Beispielsätze zu ändern.
+Die Prüfung gilt für alle Lernwörter, auch in bereits importierten Büchern.
+Sie benötigt keinen erneuten Download, keine KI und keine Online-Abfrage.
+Details, Lizenz und reproduzierbarer Datenaufbau stehen unter
+[`lib/turkish-word-forms/`](lib/turkish-word-forms/README.md).
 Unbekannte Zusammensetzungen und echte Bindestriche werden nicht blind entfernt;
 Absatzgrenzen und Apostrophe bleiben erhalten. Die Anzeige glättet Zeilenumbrüche
 und Blocksatzabstände, während Rohtext und Quellenpositionen unverändert bleiben.
+Innerhalb einer Zeile belegte Bindestrichverbindungen bleiben auch über einen
+Zeilenumbruch erhalten. Noch unbestätigte Worttrennungen führen zum Ausschluss
+des beschädigten Beispielsatzes; Fundstellenzählung und Originaltext bleiben
+erhalten. Es werden keine Wörter oder Ersatzsätze erfunden.
 Neue Importe behalten auch kurze Quellabsätze für die Zählung.
 Wiederhergestellte alte Sätze bekommen nur dann PDF-Seiten, wenn diese sicher
 zugeordnet werden können; fehlende Seiten lassen sich durch erneuten Import erfassen.

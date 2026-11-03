@@ -1,4 +1,5 @@
 import { learningLexicon } from "./lexicon";
+import { isKnownTurkishWordForm } from "./turkish-word-forms";
 
 // Deliberately bounded: never infer arbitrary word boundaries from word length.
 // These are attested whole forms, not every possible stem/suffix concatenation.
@@ -150,34 +151,71 @@ export type WordBreakRepair = {
   replacement: string;
 };
 export type PdfWordBreakResult = { text: string; repairs: WordBreakRepair[] };
+export type DocumentWordForms = ReadonlySet<string> & {
+  readonly compounds?: ReadonlySet<string>;
+};
+const breakMarker = /[-\u00ad\u2010]/u;
 function validGap(gap: string) {
-  return /^(?:[ \t]+|[ \t]*\r?\n[ \t]*|[ \t]*-(?:[ \t]*\r?\n[ \t]*|[ \t]+)|[ \t]*\u00ad[ \t]*(?:\r?\n[ \t]*)?)$/u.test(
+  return /^(?:[ \t]+|[ \t]*\r?\n[ \t]*|[ \t]*[-\u2010](?:[ \t]*\r?\n[ \t]*|[ \t]+)|[ \t]*\u00ad[ \t]*(?:\r?\n[ \t]*)?)$/u.test(
     gap,
   );
 }
 /** Whole forms observed unbroken elsewhere in this document, scoped per book. */
-export function observedWordForms(text: string): ReadonlySet<string> {
-  return new Set(
-    [...text.matchAll(/\p{L}+(?:['’]\p{L}+)*/gu)]
-      .filter(
-        (match) =>
-          match[0].length >= 3 &&
-          !/[-\u00ad][ \t]*$/u.test(
-            text.slice(Math.max(0, match.index! - 4), match.index!),
-          ) &&
-          !/^[ \t]*[-\u00ad]/u.test(
-            text.slice(
-              match.index! + match[0].length,
-              match.index! + match[0].length + 4,
-            ),
-          ),
-      )
-      .map((match) => normalizeForm(match[0])),
+export function observedWordForms(text: string): DocumentWordForms {
+  // Inline hyphenated expressions attest a genuine compound, not a line wrap.
+  const compounds = new Set(
+    [...text.matchAll(/\p{L}+(?:['’]\p{L}+)?[-\u2010\u2011]\p{L}+/gu)].map(
+      (match) => normalizeForm(match[0]).replace(/[-\u2010\u2011]/gu, "-"),
+    ),
   );
+  const forms = Object.assign(new Set<string>(), { compounds });
+  const tokens = [...text.matchAll(/\p{L}+(?:['’]\p{L}+)*/gu)];
+  for (let i = 0; i < tokens.length; i++) {
+    const token = tokens[i];
+    const before = text.slice(
+      i ? tokens[i - 1].index! + tokens[i - 1][0].length : 0,
+      token.index!,
+    );
+    const after = text.slice(
+      token.index! + token[0].length,
+      i + 1 < tokens.length ? tokens[i + 1].index! : text.length,
+    );
+    if (
+      token[0].length < 3 ||
+      /^[ \t]*[-\u00ad\u2010\u2011][ \t]*(?:\r?\n[ \t]*)?$/u.test(before) ||
+      /^[ \t]*[-\u00ad\u2010\u2011]/u.test(after)
+    )
+      continue;
+    forms.add(normalizeForm(token[0]));
+    // "Mekke’ye" also attests the whole proper name "Mekke".
+    const proper = token[0].match(/^(\p{Lu}\p{L}{2,})['’]/u)?.[1];
+    if (proper) forms.add(normalizeForm(proper));
+  }
+  return forms;
+}
+
+/** Unverified line-end splits must not be displayed as damaged learning quotes.
+ * A compound observed inline in the book, or a relation such as Türk-Alman,
+ * retains its meaningful hyphen. Original source text is never edited. */
+export function hasUnresolvedWordBreak(
+  text: string,
+  documentForms: DocumentWordForms = new Set(),
+) {
+  for (const match of text.matchAll(
+    /(\p{L}+(?:['’]\p{L}+)*)[ \t]*([-\u00ad\u2010])[ \t]*\r?\n[ \t]*(\p{L}+(?:['’]\p{L}+)*)/gu,
+  )) {
+    if (match[2] !== "\u00ad") {
+      const compound = normalizeForm(match[1] + "-" + match[3]);
+      if (documentForms.compounds?.has(compound)) continue;
+      if (/^\p{Lu}/u.test(match[1]) && /^\p{Lu}/u.test(match[3])) continue;
+    }
+    return true;
+  }
+  return false;
 }
 export function repairPdfWordBreaks(
   text: string,
-  documentForms: ReadonlySet<string> = new Set(),
+  documentForms: DocumentWordForms = new Set(),
 ): PdfWordBreakResult {
   const tokens = [...text.matchAll(/\p{L}+(?:['’]\p{L}+)*/gu)];
   const forms = tokens.map((token) => normalizeForm(token[0]));
@@ -186,28 +224,41 @@ export function repairPdfWordBreaks(
     let candidate = tokens[i][0];
     let candidateForm = forms[i];
     let explicitBreak = false;
+    let onlyExplicitBreaks = true;
+    const parts = [forms[i]];
     let best: { last: number; replacement: string } | null = null;
-    for (let j = i + 1; j < tokens.length && j < i + 4; j++) {
+    for (
+      let j = i + 1;
+      j < tokens.length &&
+      (j < i + 4 || onlyExplicitBreaks) &&
+      candidate.length < 80;
+      j++
+    ) {
       const previous = tokens[j - 1];
       const gap = text.slice(
         previous.index! + previous[0].length,
         tokens[j].index!,
       );
       if (!validGap(gap)) break;
-      explicitBreak ||= /[-\u00ad]/u.test(gap);
+      if (j >= i + 4 && !breakMarker.test(gap)) break;
+      explicitBreak ||= breakMarker.test(gap);
+      onlyExplicitBreaks &&= breakMarker.test(gap);
       candidate += tokens[j][0];
       candidateForm += forms[j];
+      parts.push(forms[j]);
+      if (documentForms.compounds?.has(parts.join("-"))) break;
       // Both independently meaningful words may legitimately be separate.
       if (
         j === i + 1 &&
-        !/[-\u00ad]/u.test(gap) &&
+        !breakMarker.test(gap) &&
         standalone.has(forms[i]) &&
         standalone.has(forms[j])
       )
         continue;
       if (
         knownForms.has(candidateForm) ||
-        (explicitBreak && documentForms.has(candidateForm))
+        (explicitBreak && documentForms.has(candidateForm)) ||
+        (onlyExplicitBreaks && isKnownTurkishWordForm(candidateForm))
       ) {
         // Do not consume the start of a hyphenated word as the end of a
         // neighboring word: "gün dem-\nirci" must not become "gündem-\nirci".
@@ -215,7 +266,7 @@ export function repairPdfWordBreaks(
         const followingGap = next
           ? text.slice(tokens[j].index! + tokens[j][0].length, next.index!)
           : "";
-        if (!(/[-\u00ad]/u.test(followingGap) && validGap(followingGap)))
+        if (!(breakMarker.test(followingGap) && validGap(followingGap)))
           best = { last: j, replacement: candidate };
       }
     }

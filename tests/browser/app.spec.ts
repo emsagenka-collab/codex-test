@@ -1,5 +1,51 @@
 import { readFileSync } from "node:fs";
 import { test, expect } from "@playwright/test";
+test("inflected PDF-style word breaks are repaired throughout the sentence carousel", async ({
+  page,
+  request,
+}) => {
+  await request.post("/api/reset", { data: { confirm: "DELETE" } });
+  await request.post("/api/settings", {
+    data: { dailyWordCount: 1, level: "B2" },
+  });
+  const text =
+    "Harp sırasında bera-\nberdi.\n\nHarp sırasında göste-\nrilmişti.\n\nHarp sırasında qzxv-\nabcxyz gördü.";
+  const imported = await request.post("/api/import", {
+    multipart: {
+      file: {
+        name: "worttrennungen.txt",
+        mimeType: "text/plain",
+        buffer: Buffer.from(text),
+      },
+    },
+  });
+  expect(await imported.json()).toHaveProperty("ok", true);
+  await page.goto("/");
+  const card = page.locator("article.word-card").first();
+  await expect(card.locator(".word-title h2")).toHaveText("harp");
+  await expect(card.locator(".example-count")).toHaveText("1 / 2");
+  await expect(card.locator(".example-current>blockquote")).toContainText(
+    "Harp sırasında beraberdi.",
+  );
+  await card.getByRole("button", { name: "Nächster Beispielsatz" }).click();
+  await expect(card.locator(".example-current>blockquote")).toContainText(
+    "Harp sırasında gösterilmişti.",
+  );
+  await page.reload();
+  await expect(card.locator(".example-current>blockquote")).toContainText(
+    "Harp sırasında beraberdi.",
+  );
+  const data = await (await request.get("/api/state")).json();
+  expect(data.daily[0].frequency).toBe(3);
+  expect(data.daily[0].examples).toHaveLength(2);
+  expect(data.daily[0].originalSentence).toContain("bera-\nberdi");
+  const backup = await (await request.get("/api/export")).json();
+  expect(
+    backup.sections
+      .map((s: { originalText: string }) => s.originalText)
+      .join("\n\n"),
+  ).toBe(text);
+});
 test("mobile import, daily lesson, persistence and all navigation", async ({
   page,
   request,

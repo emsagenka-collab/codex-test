@@ -1,0 +1,10 @@
+{
+  "source": "https://github.com/wooorm/dictionaries/tree/main/dictionaries/tr",
+  "author": "Harun Reşit Zafer",
+  "license": "MIT",
+  "sha256": {
+    "index.dic": "dc1d8f7724f4aefd117274678de431e4ea1765f2e02e6983b6ca48cbf5a7fc7c",
+    "index.aff": "6a390c79b054ad427cf9a6bf6de43463953cc1918e7f727e9dd4ebd4f9702f42",
+    "license": "c18fd6425a62f50a0f1d4ec1dd45611e2051a66c56c44349a5f9045325549c0c"
+  }
+}

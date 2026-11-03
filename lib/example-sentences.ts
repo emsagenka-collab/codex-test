@@ -1,6 +1,18 @@
-import { isRunningHeader, maskRunningHeaders } from "./running-headers";
-import { repairTurkishText, hasLegacyTurkishGlyphs } from "./text-repair";
+import {
+  isRunningHeader,
+  maskRunningHeaders,
+  stripRunningHeaders,
+} from "./running-headers";
+import {
+  repairTurkishText,
+  hasLegacyTurkishGlyphs,
+  bookWordForms,
+} from "./text-repair";
 import { sentences, tokens } from "./learning";
+import {
+  hasUnresolvedWordBreak,
+  type DocumentWordForms,
+} from "./pdf-word-breaks";
 
 // Conservative source selection: uncertainty should omit an example, not turn
 // a heading/list/table cell into a quote. This is not a full grammar parser.
@@ -117,8 +129,9 @@ export function exampleSentences(
   section: string,
   legacy = hasLegacyTurkishGlyphs(section),
   headers = new Set<string>(),
-  documentForms?: ReadonlySet<string>,
+  documentForms?: DocumentWordForms,
 ): string[] {
+  documentForms ??= bookWordForms(section, legacy);
   if (isContentsText(repairTurkishText(section, legacy))) return [];
   const result: string[] = [];
   for (const block of section.split(/\n\s*\n/u)) {
@@ -140,9 +153,11 @@ export function exampleSentences(
         const sentence = part.replace(/^\([^()\n]*\)\s*\n\s*/u, "");
         const start = masked.indexOf(sentence, cursor);
         cursor = start + sentence.length;
+        const display = repair(stripRunningHeaders(sentence, headers, legacy));
         if (
           start >= 0 &&
-          isCompleteExample(repair(sentence).replace(/^[–—-]\s+/u, ""))
+          !hasUnresolvedWordBreak(display, documentForms) &&
+          isCompleteExample(display.replace(/^[–—-]\s+/u, ""))
         )
           result.push(raw.slice(start, cursor));
       }
@@ -169,7 +184,9 @@ export function exampleSentences(
       if (
         !inList &&
         !inTable &&
-        /\p{L}[ \t]*[-\u00ad][ \t]*$/u.test(repair(paragraph.at(-1) || "")) &&
+        /\p{L}[ \t]*[-\u00ad\u2010][ \t]*$/u.test(
+          repair(paragraph.at(-1) || ""),
+        ) &&
         /^\p{L}/u.test(analysis.trim())
       ) {
         paragraph.push(line);

@@ -1,4 +1,8 @@
-import { observedWordForms, repairPdfWordBreaks } from "./pdf-word-breaks";
+import {
+  observedWordForms,
+  repairPdfWordBreaks,
+  type DocumentWordForms,
+} from "./pdf-word-breaks";
 /** Older Turkish PDFs sometimes expose font character codes instead of Unicode.
  * Repairs are deterministic display/analysis transforms. Raw source stays intact.
  * Never infer missing words, punctuation, or historical content.
@@ -69,7 +73,7 @@ function repairLegacyGlyphs(
 export function repairTurkishText(
   text: string,
   legacy = hasLegacyTurkishGlyphs(text),
-  documentForms?: ReadonlySet<string>,
+  documentForms?: DocumentWordForms,
 ): string {
   return repairPdfWordBreaks(repairLegacyGlyphs(text, legacy), documentForms)
     .text;

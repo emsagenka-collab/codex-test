@@ -392,7 +392,6 @@ function sourceVocabulary(book: Record<string, unknown>) {
   const cached = bookWords.get(active);
   if (cached) return cached;
   const source = sourceBook(active);
-  const legacy = !book.isDemo && legacyBook(active);
   const progressIds: number[] = [];
   const insertWord = db().prepare(
     "INSERT OR IGNORE INTO VocabularyWord(word,normalizedWord,data) VALUES (?,?,?)",
@@ -496,7 +495,7 @@ function sourceVocabulary(book: Record<string, unknown>) {
     if (selected && !repairedSections.has(selected.section.id))
       repairedSections.set(
         selected.section.id,
-        repairTurkishText(selected.section.text, legacy),
+        source.repairText(selected.section.text),
       );
     const section = selected ? repairedSections.get(selected.section.id)! : "";
     return {

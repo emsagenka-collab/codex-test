@@ -973,6 +973,118 @@ details[open] > summary > svg {
 .bottom-nav {
   display: none;
 }
+.library-intro {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 24px;
+  margin-bottom: 25px;
+}
+.library-intro h1 {
+  font:
+    44px "Libre Caslon Display",
+    Georgia,
+    serif;
+  margin: 12px 0;
+}
+.library-intro p,
+.library-count {
+  color: var(--muted);
+  line-height: 1.7;
+}
+.library-count {
+  margin-bottom: 20px;
+  font-size: 12px;
+}
+.library-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 290px), 1fr));
+  gap: 18px;
+}
+.library-book {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 25px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--paper);
+}
+.library-book.is-active {
+  border-color: var(--green);
+  box-shadow: inset 0 3px 0 var(--green);
+}
+.library-book-top {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+.library-book-icon {
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 62px;
+  border-radius: 4px 9px 9px 4px;
+  background: var(--green-soft);
+  color: var(--green);
+  border-left: 4px solid var(--green);
+}
+.library-book h2 {
+  font:
+    29px "Libre Caslon Display",
+    Georgia,
+    serif;
+  margin: 23px 0 10px;
+  overflow-wrap: anywhere;
+}
+.library-book-meta,
+.library-book-note {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.7;
+}
+.library-book-meta {
+  margin: 0 0 10px;
+}
+.library-book-note {
+  flex: 1;
+  margin-bottom: 22px;
+}
+.library-active,
+.library-demo {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10px;
+  color: var(--green);
+  background: var(--green-soft);
+  border-radius: 20px;
+  padding: 7px 9px;
+}
+.library-demo {
+  color: var(--muted);
+  background: var(--example);
+}
+.library-empty .primary {
+  margin-top: 15px;
+}
+@media (max-width: 600px) {
+  .library-intro {
+    flex-direction: column;
+    gap: 14px;
+  }
+  .library-intro h1 {
+    font-size: 36px;
+  }
+  .library-intro p {
+    margin-bottom: 0;
+  }
+  .library-book {
+    padding: 22px;
+  }
+}
 .welcome {
   background: var(--paper);
   border: 1px solid var(--line);
@@ -1952,7 +2064,7 @@ details[open] > summary > svg {
     align-items: center;
     gap: 5px;
     color: #959d89;
-    width: 25%;
+    width: 20%;
     font-size: 9px;
     min-height: 45px;
     padding: 5px;

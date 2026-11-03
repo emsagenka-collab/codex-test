@@ -5,6 +5,7 @@ import {
   saveSettings,
   importBook,
   loadDemo,
+  selectBook,
   reset,
   exportData,
 } from "@/lib/db";
@@ -77,6 +78,11 @@ export async function POST(
     const { action } = await params;
     let result: unknown = {};
     switch (action[0]) {
+      case "book": {
+        const body = await request.json();
+        selectBook(Number(body.id));
+        break;
+      }
       case "rate": {
         const body = await request.json();
         rate(Number(body.id), String(body.rating));

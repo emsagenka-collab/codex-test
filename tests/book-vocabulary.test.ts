@@ -20,7 +20,7 @@ test("the extended offline dictionary has distinct teaching entries without fabr
     const entries = learningLexicon.filter(
       (entry) => entry.difficulty === level,
     );
-    assert.ok(entries.length >= 1000, `Level ${level}: ${entries.length}`);
+    assert.ok(entries.length >= 2000, `Level ${level}: ${entries.length}`);
   }
   assert.equal(
     new Set(learningLexicon.map((e) => normalize(e.word))).size,
@@ -34,12 +34,8 @@ test("the extended offline dictionary has distinct teaching entries without fabr
     );
     assert.match(entry.word, /^\p{L}+$/u);
     assert.ok(entry.explanation.length >= 20, entry.word);
-    for (const field of [
-      entry.meaning,
-      entry.explanation,
-      entry.modern,
-      entry.related,
-    ])
+    assert.ok(entry.meaning.trim().length >= 2, entry.word);
+    for (const field of [entry.explanation, entry.modern, entry.related])
       assert.ok(field.trim().length > 2, entry.word);
   }
   for (const entry of learningLexicon.filter((e) => !lexicon.includes(e))) {

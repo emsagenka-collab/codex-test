@@ -5,6 +5,9 @@ import { c1Rows } from "./c1";
 import { b1AdditionalRows } from "./b1-additional";
 import { b2AdditionalRows } from "./b2-additional";
 import { c1AdditionalRows } from "./c1-additional";
+import { b1ExpansionRows } from "./b1-expansion";
+import { b2ExpansionRows } from "./b2-expansion";
+import { c1ExpansionRows } from "./c1-expansion";
 
 // Compact, authored word tables. Every line explicitly supplies a definition;
 // no automatic translation, invented quotation, or live service is involved.
@@ -42,4 +45,7 @@ export const expandedVocabulary: Entry[] = [
   ...entries(1, b1AdditionalRows),
   ...entries(2, b2AdditionalRows),
   ...entries(3, c1AdditionalRows),
+  ...entries(1, b1ExpansionRows),
+  ...entries(2, b2ExpansionRows),
+  ...entries(3, c1ExpansionRows),
 ];

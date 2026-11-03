@@ -70,7 +70,7 @@ export function wordMatcher(word: string) {
         ? form.slice(0, -1) + softened[form.at(-1)!]
         : ""),
   }));
-  return (token: string) =>
+  const matches = (token: string) =>
     forms.some(
       ({ form, stem }) =>
         token === form ||
@@ -80,6 +80,15 @@ export function wordMatcher(word: string) {
           /^[aeıioöuü]/u.test(token.slice(stem.length)) &&
           suffix.test(token.slice(stem.length))),
     );
+  return Object.assign(matches, {
+    prefixes: [
+      ...new Set(
+        forms.flatMap(({ form, stem }) =>
+          [form, stem].filter(Boolean).map((value) => value.slice(0, 2)),
+        ),
+      ),
+    ],
+  });
 }
 export function matches(token: string, word: string) {
   return wordMatcher(word)(normalize(token));

@@ -107,6 +107,7 @@ export function db() {
  CREATE TABLE IF NOT EXISTS WordOccurrence (id INTEGER PRIMARY KEY, wordId INTEGER REFERENCES VocabularyWord(id), sectionId INTEGER REFERENCES TextSection(id), sentence TEXT NOT NULL, surroundingText TEXT NOT NULL, translation TEXT NOT NULL DEFAULT '', context TEXT NOT NULL DEFAULT '', pageNumber INTEGER, pageEnd INTEGER);
  CREATE TABLE IF NOT EXISTS LearningProgress (id INTEGER PRIMARY KEY, userId INTEGER REFERENCES User(id), wordId INTEGER REFERENCES VocabularyWord(id), status TEXT NOT NULL DEFAULT 'new', firstSeen TEXT, lastReviewed TEXT, nextReview TEXT, reviewCount INTEGER NOT NULL DEFAULT 0, difficultyRating TEXT, UNIQUE(userId,wordId));
  CREATE TABLE IF NOT EXISTS DailyWords (date TEXT PRIMARY KEY, word1 INTEGER REFERENCES VocabularyWord(id), word2 INTEGER REFERENCES VocabularyWord(id), wordIds TEXT NOT NULL DEFAULT '[]', scope TEXT NOT NULL DEFAULT '');
+ CREATE TABLE IF NOT EXISTS DailySelections (date TEXT NOT NULL, scope TEXT NOT NULL, wordIds TEXT NOT NULL, PRIMARY KEY(date,scope));
  CREATE TABLE IF NOT EXISTS Activity (day TEXT NOT NULL, wordId INTEGER REFERENCES VocabularyWord(id), UNIQUE(day,wordId));
  CREATE TABLE IF NOT EXISTS AppMeta (key TEXT PRIMARY KEY, value TEXT NOT NULL);`);
   const occurrenceColumns = connection
@@ -292,12 +293,35 @@ export function importBook(
       (e) => !extra.some((x) => normalize(x.word) === normalize(e.word)),
     ),
   ];
+  const sentenceOrder = new Map(
+    locatedSentences.map((sentence, i) => [sentence, i]),
+  );
+  const sentencesByPrefix = new Map<
+    string,
+    Set<(typeof locatedSentences)[number]>
+  >();
+  for (const sentence of locatedSentences) {
+    for (const token of sentence.words) {
+      for (const prefix of new Set([token.slice(0, 1), token.slice(0, 2)])) {
+        if (!sentencesByPrefix.has(prefix))
+          sentencesByPrefix.set(prefix, new Set());
+        sentencesByPrefix.get(prefix)!.add(sentence);
+      }
+    }
+  }
   const found = dictionary
     .map((entry) => {
       const matches = wordMatcher(entry.word);
+      const candidates = new Set(
+        matches.prefixes.flatMap((prefix) => [
+          ...(sentencesByPrefix.get(prefix) || []),
+        ]),
+      );
       return {
         entry,
-        occurrences: locatedSentences.filter((occ) => occ.words.some(matches)),
+        occurrences: [...candidates]
+          .filter((occ) => occ.words.some(matches))
+          .sort((a, b) => sentenceOrder.get(a)! - sentenceOrder.get(b)!),
       };
     })
     .filter((x) => x.occurrences.length);
@@ -384,6 +408,17 @@ export function loadDemo() {
     return;
   }
   return importBook("Ein Lesebuch · Demo", demoText, true);
+}
+export function selectBook(id: number) {
+  if (
+    !Number.isSafeInteger(id) ||
+    id < 1 ||
+    !one("SELECT id FROM Book WHERE id=?", id)
+  )
+    throw new Error("Dieses Buch wurde in deiner Bibliothek nicht gefunden.");
+  db()
+    .prepare("INSERT OR REPLACE INTO AppMeta VALUES ('activeBook',?)")
+    .run(String(id));
 }
 function sourceVocabulary(book: Record<string, unknown>) {
   const active = Number(book.id);
@@ -592,7 +627,13 @@ export function state(): State {
       one("SELECT value FROM AppMeta WHERE key='activeBook'")?.value || 0,
     );
     const scope = `${activeBook}:${config.level}`;
-    const daily = one("SELECT * FROM DailyWords WHERE date=?", today);
+    const latestDaily = one("SELECT * FROM DailyWords WHERE date=?", today);
+    const savedDaily = one(
+      "SELECT * FROM DailySelections WHERE date=? AND scope=?",
+      today,
+      scope,
+    );
+    const daily = savedDaily || latestDaily;
     const sameScope = !daily?.scope || daily.scope === scope;
     const previousIds: number[] =
       daily && sameScope ? JSON.parse(String(daily.wordIds)) : [];
@@ -639,8 +680,16 @@ export function state(): State {
     ];
     if (
       JSON.stringify(dailyIds) !== JSON.stringify(previousIds) ||
-      daily?.scope !== scope
+      daily?.scope !== scope ||
+      !savedDaily ||
+      latestDaily?.scope !== scope ||
+      latestDaily?.wordIds !== JSON.stringify(dailyIds)
     ) {
+      db()
+        .prepare(
+          "INSERT INTO DailySelections(date,scope,wordIds) VALUES (?,?,?) ON CONFLICT(date,scope) DO UPDATE SET wordIds=excluded.wordIds",
+        )
+        .run(today, scope, JSON.stringify(dailyIds));
       db()
         .prepare(
           "INSERT INTO DailyWords(date,word1,word2,wordIds,scope) VALUES (?,?,?,?,?) ON CONFLICT(date) DO UPDATE SET word1=excluded.word1,word2=excluded.word2,wordIds=excluded.wordIds,scope=excluded.scope",
@@ -653,7 +702,16 @@ export function state(): State {
           scope,
         );
       // Unrated words removed from today's lesson remain available on future days.
-      for (const id of previousIds.filter((id) => !dailyIds.includes(id)))
+      const otherSelections = new Set(
+        all(
+          "SELECT wordIds FROM DailySelections WHERE date=? AND scope<>?",
+          today,
+          scope,
+        ).flatMap((row) => JSON.parse(String(row.wordIds)) as number[]),
+      );
+      for (const id of previousIds.filter(
+        (id) => !dailyIds.includes(id) && !otherSelections.has(id),
+      ))
         db()
           .prepare(
             "UPDATE LearningProgress SET firstSeen=NULL WHERE userId=1 AND wordId=? AND firstSeen=? AND status='new' AND reviewCount=0 AND lastReviewed IS NULL",
@@ -707,6 +765,18 @@ export function state(): State {
   ).length;
   return {
     today,
+    books: all(
+      `SELECT b.*,COUNT(s.id) AS sectionCount FROM Book b LEFT JOIN TextSection s ON s.bookId=b.id
+       GROUP BY b.id ORDER BY CASE WHEN b.id=? THEN 0 ELSE 1 END,b.isDemo,b.importedAt DESC,b.id DESC`,
+      Number(bookRow?.id || 0),
+    ).map((row) => ({
+      id: Number(row.id),
+      title: String(row.title),
+      importedAt: String(row.importedAt),
+      isDemo: !!row.isDemo,
+      sectionCount: Number(row.sectionCount),
+      active: row.id === bookRow?.id,
+    })),
     levelCounts,
     dictionaryCounts: offlineLevelCounts,
     levelProgress: {
@@ -799,7 +869,7 @@ export function reset() {
   db().exec("BEGIN IMMEDIATE");
   try {
     db().exec(
-      "DELETE FROM Activity; DELETE FROM DailyWords; DELETE FROM LearningProgress; DELETE FROM WordOccurrence; DELETE FROM VocabularyWord; DELETE FROM TextSection; DELETE FROM Book; DELETE FROM AppMeta;",
+      "DELETE FROM Activity; DELETE FROM DailySelections; DELETE FROM DailyWords; DELETE FROM LearningProgress; DELETE FROM WordOccurrence; DELETE FROM VocabularyWord; DELETE FROM TextSection; DELETE FROM Book; DELETE FROM AppMeta;",
     );
     db().exec("COMMIT");
   } catch (e) {
@@ -818,6 +888,10 @@ export function exportData() {
     occurrences: all("SELECT * FROM WordOccurrence"),
     progress: all("SELECT * FROM LearningProgress"),
     daily: all("SELECT * FROM DailyWords"),
+    selections: all("SELECT * FROM DailySelections"),
+    activeBookId: Number(
+      one("SELECT value FROM AppMeta WHERE key='activeBook'")?.value || 0,
+    ),
     activity: all("SELECT * FROM Activity"),
   };
 }

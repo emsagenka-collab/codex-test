@@ -532,7 +532,21 @@ test("daily goals resize immediately and completed levels offer advance, another
   await page.getByRole("button", { name: "Einstellungen öffnen" }).click();
   await page.getByLabel("Dein Türkisch-Niveau").selectOption("B2");
   await page.getByRole("button", { name: "Einstellungen speichern" }).click();
-  await expect(page.locator("article.word-card")).toHaveCount(0);
+  // Returning to a book/level keeps its already-rated daily lesson visible.
+  await expect(page.locator("article.word-card")).toHaveCount(4);
+  const returned = await (await request.get("/api/state")).json();
+  expect(
+    returned.daily.every((w: { rating: string }) => w.rating === "understood"),
+  ).toBe(true);
+  expect(returned.daily.map((w: { id: number }) => w.id).sort()).toEqual(
+    afterAdvance.vocabulary
+      .filter(
+        (w: { difficulty: number; reviewCount: number }) =>
+          w.difficulty === 2 && w.reviewCount === 1,
+      )
+      .map((w: { id: number }) => w.id)
+      .sort(),
+  );
   await expect(completion.getByRole("heading")).toContainText("B2");
   await completion
     .getByRole("button", { name: /Mit anderem Buch weiterlernen/ })
@@ -590,7 +604,7 @@ test("extended book vocabulary fills both categories and shows dictionary counts
   await page.getByRole("button", { name: "Einstellungen öffnen" }).click();
   const catalog = page.getByLabel("Offline-Wörterbuch nach Niveau");
   for (const level of ["B1", "B2", "C1"]) {
-    expect(data.dictionaryCounts[level]).toBeGreaterThanOrEqual(1000);
+    expect(data.dictionaryCounts[level]).toBeGreaterThanOrEqual(2000);
     await expect(catalog).toContainText(
       `${level}: ${data.dictionaryCounts[level]}`,
     );

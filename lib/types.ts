@@ -61,11 +61,20 @@ export type Settings = {
   reminder: string;
   timezone: string;
 };
+export type LibraryBook = {
+  id: number;
+  title: string;
+  importedAt: string;
+  isDemo: boolean;
+  sectionCount: number;
+  active: boolean;
+};
 export type State = {
   today: string;
   daily: Word[];
   vocabulary: Word[];
   due: Word[];
+  books: LibraryBook[];
   book: {
     id: number;
     title: string;

@@ -71,6 +71,15 @@ export function indexBookSource(sections: SourceSection[], legacy: boolean) {
     ...tokenCounts.keys(),
     ...examplesByToken.keys(),
   ]);
+  // Every accepted inflection starts with a compiled base/stem prefix. Avoid
+  // scanning the whole book vocabulary for each of thousands of dictionary rows.
+  const tokensByPrefix = new Map<string, string[]>();
+  for (const token of indexedTokens) {
+    for (const prefix of new Set([token.slice(0, 1), token.slice(0, 2)])) {
+      if (!tokensByPrefix.has(prefix)) tokensByPrefix.set(prefix, []);
+      tokensByPrefix.get(prefix)!.push(token);
+    }
+  }
   const cache = new Map<
     string,
     { frequency: number; examples: SourceExample[] }
@@ -84,7 +93,12 @@ export function indexBookSource(sections: SourceSection[], legacy: boolean) {
         const matches = wordMatcher(key);
         let frequency = 0;
         const examples = new Set<SourceExample>();
-        for (const token of indexedTokens) {
+        const candidates = new Set(
+          matches.prefixes.flatMap(
+            (prefix) => tokensByPrefix.get(prefix) || [],
+          ),
+        );
+        for (const token of candidates) {
           if (!matches(token)) continue;
           frequency += tokenCounts.get(token) || 0;
           for (const example of examplesByToken.get(token) || [])

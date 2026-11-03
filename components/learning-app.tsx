@@ -28,11 +28,12 @@ import {
 } from "lucide-react";
 import WordCard from "./word-card";
 import LevelCompletion from "./level-completion";
+import BookLibrary from "./book-library";
 import Modal from "./modal";
 import { ImportForm, SettingsForm } from "./forms";
 import { Highlight, formatDate, difficulty } from "./shared";
 import type { State, Word, Settings } from "@/lib/types";
-type Tab = "today" | "review" | "words" | "progress";
+type Tab = "today" | "review" | "words" | "library" | "progress";
 const tabs = [
   { id: "today" as Tab, label: "Heute", sub: "Bugün", icon: Sun },
   { id: "review" as Tab, label: "Wiederholen", sub: "Tekrar", icon: RotateCcw },
@@ -40,6 +41,12 @@ const tabs = [
     id: "words" as Tab,
     label: "Mein Wortschatz",
     sub: "Kelimelerim",
+    icon: Bookmark,
+  },
+  {
+    id: "library" as Tab,
+    label: "Bibliothek",
+    sub: "Kütüphane",
     icon: Library,
   },
   {
@@ -148,7 +155,10 @@ export default function LearningApp() {
     setFlipped(false);
     window.scrollTo({ top: 0, behavior: "instant" });
   }
-  const due = data?.due.length || 0;
+  const activeVocabulary = (data?.vocabulary || []).filter(
+    (w) => w.frequency > 0 && w.examples.length > 0,
+  );
+  const due = data?.due.filter((w) => w.examples.length > 0).length || 0;
   const reviewPool = (data?.due || []).filter(
     (w) => w.examples.length > 0 && !reviewed.includes(w.id),
   );
@@ -661,7 +671,7 @@ export default function LearningApp() {
                         aria-label="Wörter durchsuchen"
                       />
                     </label>
-                    <span>{data.vocabulary.length} Wörter</span>
+                    <span>{activeVocabulary.length} Wörter</span>
                   </div>
                   <div className="filter-row">
                     {[
@@ -682,7 +692,7 @@ export default function LearningApp() {
                     ))}
                   </div>
                   <div className="word-list">
-                    {data.vocabulary
+                    {activeVocabulary
                       .filter((w) =>
                         (w.word + " " + w.meaning)
                           .toLocaleLowerCase("tr")
@@ -730,7 +740,7 @@ export default function LearningApp() {
                         </button>
                       ))}
                   </div>
-                  {data.vocabulary
+                  {activeVocabulary
                     .filter((w) =>
                       (w.word + " " + w.meaning)
                         .toLocaleLowerCase("tr")
@@ -758,6 +768,20 @@ export default function LearningApp() {
                     </div>
                   )}
                 </>
+              )}
+              {tab === "library" && (
+                <BookLibrary
+                  books={data.books || []}
+                  busy={busy}
+                  onImport={() => setModal("import")}
+                  onLearn={() => navigate("today")}
+                  onSelect={async (id) => {
+                    if (
+                      await act("book", { id }, "Dein Lernbuch ist ausgewählt.")
+                    )
+                      navigate("today");
+                  }}
+                />
               )}
               {tab === "progress" && (
                 <>

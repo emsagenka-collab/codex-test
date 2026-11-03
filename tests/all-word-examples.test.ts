@@ -7,13 +7,15 @@ import { sentences } from "../lib/learning";
 
 test("every dictionary word receives all suitable prose examples, including dialogue, abbreviations and word wraps", () => {
   for (const { word } of learningLexicon) {
+    const about = word === "hakkında" ? "için" : "hakkında";
+    const today = word === "bugün" ? "Şimdi" : "Bugün";
     const breakAt = Math.max(1, Math.floor(word.length / 2));
     const split = `${word.slice(0, breakAt)}-\n${word.slice(breakAt)}`;
     const texts = [
-      `a) ${word.toLocaleUpperCase("tr-TR")}\nHz. Ece, ${word} hakkında konuştu.`,
-      `Ece şöyle dedi:\n– “Bugün ${word} hakkında\nkonuşacağız,” dedi.`,
-      `a) TOPLANANLAR VE YAHUDİLER\nBİRLEŞİYOR:\nO gün ${split} hakkında düşündü.`,
-      `O gün ${word} hakkında konuştu mu?`,
+      `a) ${word.toLocaleUpperCase("tr-TR")}\nHz. Zeynep, ${word} ${about} konuştu.`,
+      `Zeynep dedi:\n– “${today} ${word} ${about}\nkonuşacağız,” dedi.`,
+      `Zeynep ${split} ${about} düşündü.`,
+      `Zeynep ${word} ${about} konuştu!`,
       `• ${word}.\n\na) ${word}.`,
     ];
     const index = indexBookSource(
@@ -33,7 +35,7 @@ test("every dictionary word receives all suitable prose examples, including dial
       result.examples.every((example) => !example.sentence.includes("-\n")),
       word,
     );
-    assert.match(result.examples[0].sentence, /^Hz\. Ece,/u);
+    assert.match(result.examples[0].sentence, /^Hz\. Zeynep,/u);
   }
 });
 

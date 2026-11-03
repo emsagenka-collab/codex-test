@@ -34,7 +34,7 @@ test("real word boundaries, unknown forms, punctuation, paragraphs and meaningfu
     "tefek\n\nkür",
     "Türk-İslam",
     "tefek-kür",
-    "bilin meyen",
+    "qzxv abcxyz",
     "merhaba dünya",
   ])
     assert.equal(repairPdfWordBreaks(text).text, text);

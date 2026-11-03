@@ -1,13 +1,14 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { indexBookSource } from "../lib/book-source";
-import { lexicon } from "../lib/lexicon";
+import { learningLexicon } from "../lib/lexicon";
 import { exampleSentences } from "../lib/example-sentences";
 import { sentences } from "../lib/learning";
 
 test("every dictionary word receives all suitable prose examples, including dialogue, abbreviations and word wraps", () => {
-  for (const { word } of lexicon) {
-    const split = `${word.slice(0, 3)}-\n${word.slice(3)}`;
+  for (const { word } of learningLexicon) {
+    const breakAt = Math.max(1, Math.floor(word.length / 2));
+    const split = `${word.slice(0, breakAt)}-\n${word.slice(breakAt)}`;
     const texts = [
       `a) ${word.toLocaleUpperCase("tr-TR")}\nHz. Deniz, ${word} hakkında konuştu.`,
       `Öğretmeni şöyle dedi:\n– “Bugün ${word} hakkında\nkonuşacağız,” dedi.`,

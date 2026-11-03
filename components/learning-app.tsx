@@ -916,6 +916,7 @@ export default function LearningApp() {
             data && (
               <SettingsForm
                 settings={data.settings}
+                levelCounts={data.levelCounts}
                 busy={busy}
                 aiAvailable={data.aiAvailable}
                 onSave={async (s) => {

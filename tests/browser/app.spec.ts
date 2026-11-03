@@ -416,7 +416,7 @@ test("daily goals resize immediately and completed levels offer advance, another
     data: { dailyWordCount: 4, level: "B2" },
   });
   const text =
-    "Emaneti iyi korudu.\n\nMetanet gösterdi.\n\nTefekkür ederken düşündü.\n\nSükûnetini korudu.\n\nHidayet için dua etti.";
+    "Emaneti iyi korudu.\n\nMetanet gösterdi.\n\nTefekkür ederken düşündü.\n\nSükûnetini korudu.\n\nKalbinde hidayet aradı.";
   const imported = await request.post("/api/import", {
     multipart: {
       file: {
@@ -491,4 +491,71 @@ test("daily goals resize immediately and completed levels offer advance, another
   await expect(
     page.getByRole("button", { name: "Bedeutung aufdecken" }),
   ).toBeVisible();
+});
+
+test("extended book vocabulary fills both categories and shows actual level counts in settings", async ({
+  page,
+  request,
+}) => {
+  await request.post("/api/reset", { data: { confirm: "DELETE" } });
+  await request.post("/api/settings", {
+    data: { dailyWordCount: 4, level: "B2" },
+  });
+  const text = [
+    "Emaneti iyi korudu.",
+    "Fazileti herkese örnek oldu.",
+    "Ona müsaade etti.",
+    "Güzel muamelesini unutmadı.",
+    "Adaleti herkes için savundu.",
+    "Arkadaşına teselli verdi.",
+    "Onlara merhamet gösterdi.",
+    "Halkın itibarını kazandı.",
+    "Himayesinde kalanları korudu.",
+    "Muhasara günlerce sürdü.",
+    "Kurallara riayet etti.",
+    "Hükmüne herkes uydu.",
+    "Gece dua etti.",
+  ].join("\n\n");
+  const imported = await request.post("/api/import", {
+    multipart: {
+      file: {
+        name: "wortschatz.txt",
+        mimeType: "text/plain",
+        buffer: Buffer.from(text),
+      },
+    },
+  });
+  expect(await imported.json()).toHaveProperty("ok", true);
+  const data = await (await request.get("/api/state")).json();
+  expect(data.levelCounts).toEqual({ B1: 1, B2: 8, C1: 4 });
+  await page.setViewportSize({ width: 320, height: 740 });
+  await page.goto("/");
+  await expect(page.locator("article.word-card")).toHaveCount(4);
+  const first = page.locator("article.word-card").first();
+  await first.getByRole("button", { name: "Verstanden", exact: true }).click();
+  await page.getByRole("button", { name: "Einstellungen öffnen" }).click();
+  await expect(
+    page.getByLabel("Lernwortschatz im aktuellen Buch"),
+  ).toContainText("B2: 8");
+  await expect(
+    page.getByLabel("Lernwortschatz im aktuellen Buch"),
+  ).toContainText("C1: 4");
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= window.innerWidth,
+    ),
+  ).toBe(true);
+  await page.getByLabel("Dein Türkisch-Niveau").selectOption("C1");
+  await page.getByRole("button", { name: "Einstellungen speichern" }).click();
+  await expect(page.locator("article.word-card")).toHaveCount(4);
+  const c1 = await (await request.get("/api/state")).json();
+  expect(
+    c1.daily.every(
+      (w: { difficulty: number; examples: unknown[]; demoBook: boolean }) =>
+        w.difficulty === 3 && w.examples.length > 0 && !w.demoBook,
+    ),
+  ).toBe(true);
+  expect(
+    c1.vocabulary.filter((w: { reviewCount: number }) => w.reviewCount > 0),
+  ).toHaveLength(1);
 });

@@ -1,4 +1,5 @@
 import type { Entry } from "./types";
+import { bookVocabulary } from "./book-vocabulary";
 // Original teaching material, written for this app. These sentences are NOT quotations from Siyer-i Nebi.
 const rows = [
   [
@@ -316,3 +317,6 @@ export const lexicon: Entry[] = rows.map(
   }),
 );
 export const demoText = lexicon.map((e) => e.demo).join("\n\n");
+// Keep the authored 24-word demo separate from the expandable book dictionary.
+export const learningLexicon: Entry[] = [...lexicon, ...bookVocabulary];
+export const offlineWordCount = learningLexicon.length;

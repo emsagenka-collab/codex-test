@@ -1,10 +1,10 @@
-import { lexicon } from "./lexicon";
+import { learningLexicon } from "./lexicon";
 
 // Deliberately bounded: never infer arbitrary word boundaries from word length.
 // These are attested whole forms, not every possible stem/suffix concatenation.
 const knownForms = new Set(
   [
-    ...lexicon.map((entry) => entry.word),
+    ...learningLexicon.map((entry) => entry.word),
     "peygamber",
     "peygamberimiz",
     "peygamberimizin",
@@ -141,7 +141,7 @@ const standalone = new Set([
   "kar",
   "kuş",
   "gül",
-  ...lexicon.map((e) => normalizeForm(e.word)),
+  ...learningLexicon.map((e) => normalizeForm(e.word)),
 ]);
 export type WordBreakRepair = {
   start: number;

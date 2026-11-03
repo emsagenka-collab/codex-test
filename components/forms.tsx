@@ -95,9 +95,10 @@ export function ImportForm({
       <div className="import-info">
         <BookOpen size={18} />
         <p>
-          Offline werden {24} kuratierte Begriffe mit ihren häufigen Beugungen
-          erkannt. Für weitere Wörter, Satzübersetzungen und Kontext ist eine
-          optionale KI-Anbindung möglich.
+          Das erweiterte Offline-Wörterbuch erkennt auch gehobene, historische
+          und religiöse Begriffe mit ihren häufigen Beugungen. Deutsche
+          Worterklärungen und Originalbeispiele aus deinem Buch funktionieren
+          ohne KI-Zugang.
         </p>
       </div>
       {data?.aiAvailable && (
@@ -149,6 +150,7 @@ export function ImportForm({
 }
 export function SettingsForm({
   settings,
+  levelCounts,
   busy,
   onSave,
   onImport,
@@ -156,6 +158,7 @@ export function SettingsForm({
   aiAvailable,
 }: {
   settings: Settings;
+  levelCounts: State["levelCounts"];
   busy: boolean;
   onSave: (s: Settings) => Promise<void>;
   onImport: () => void;
@@ -211,6 +214,11 @@ export function SettingsForm({
           <option value="C1">C1 · Sehr anspruchsvoll</option>
         </select>
       </label>
+      <p className="muted" aria-label="Lernwortschatz im aktuellen Buch">
+        Lernwörter in deinem Buch: B1: {levelCounts.B1} · B2: {levelCounts.B2} ·
+        C1: {levelCounts.C1}. Die Stufen sind eine Orientierung für die
+        Wortschwierigkeit.
+      </p>
       <label className="setting-field">
         Darstellung
         <select

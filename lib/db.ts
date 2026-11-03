@@ -4,16 +4,15 @@ import { exampleSentences } from "./example-sentences";
 import { DatabaseSync } from "node:sqlite";
 import { mkdirSync } from "node:fs";
 import path from "node:path";
-import { lexicon, demoText } from "./lexicon";
+import { learningLexicon, lexicon, demoText } from "./lexicon";
 import {
   addDays,
-  containsWord,
   dayKey,
   normalize,
   schedule,
   splitSections,
   tokens,
-  matches,
+  wordMatcher,
 } from "./learning";
 import { checkTurkishOrthography } from "./orthography";
 import {
@@ -209,11 +208,17 @@ export function importBook(
         sentenceOffset = sentenceStart + sentence.length;
         const startOffset = start + sentenceStart;
         const endOffset = startOffset + sentence.length - 1;
+        const repairedSentence = repairTurkishText(
+          sentence,
+          legacy,
+          documentForms,
+        );
         return {
           section,
           i,
           sentence,
-          repairedSentence: repairTurkishText(sentence, legacy, documentForms),
+          repairedSentence,
+          words: [...new Set(tokens(repairedSentence))],
           pageNumber:
             pageRanges.find(
               (page) => page.start <= startOffset && startOffset < page.end,
@@ -228,17 +233,18 @@ export function importBook(
   });
   const dictionary = [
     ...extra,
-    ...lexicon.filter(
+    ...(isDemo ? lexicon : learningLexicon).filter(
       (e) => !extra.some((x) => normalize(x.word) === normalize(e.word)),
     ),
   ];
   const found = dictionary
-    .map((entry) => ({
-      entry,
-      occurrences: locatedSentences.filter((occ) =>
-        containsWord(occ.repairedSentence, entry.word),
-      ),
-    }))
+    .map((entry) => {
+      const matches = wordMatcher(entry.word);
+      return {
+        entry,
+        occurrences: locatedSentences.filter((occ) => occ.words.some(matches)),
+      };
+    })
     .filter((x) => x.occurrences.length);
   if (!found.length)
     throw new Error(
@@ -334,7 +340,7 @@ function vocabulary(): Word[] {
   const legacy = !book.isDemo && legacyBook(active);
   // Repair sparse older imports from the raw source and the bundled dictionary.
   // This creates only attested words with suitable examples, never guessed entries.
-  for (const entry of lexicon) {
+  for (const entry of book.isDemo ? lexicon : learningLexicon) {
     const found = source.forWord(entry.word);
     if (!found.frequency || !found.examples.length) continue;
     db()
@@ -581,12 +587,20 @@ export function state(): State {
       word.frequency > 0 &&
       word.examples.length > 0,
   );
+  const levelCounts = { B1: 0, B2: 0, C1: 0 };
+  for (const word of vocab) {
+    if (!word.frequency || !word.examples.length) continue;
+    const level =
+      word.difficulty === 1 ? "B1" : word.difficulty === 2 ? "B2" : "C1";
+    levelCounts[level]++;
+  }
   const remaining = levelWords.filter(
     (word) =>
       word.status === "new" && word.reviewCount === 0 && !word.lastReviewed,
   ).length;
   return {
     today,
+    levelCounts,
     levelProgress: {
       level: config.level,
       total: levelWords.length,

@@ -82,6 +82,7 @@ export type State = {
     completed: boolean;
     nextLevel: string | null;
   };
+  levelCounts: { B1: number; B2: number; C1: number };
   stats: { total: number; week: number; streak: number; studiedToday: number };
   settings: Settings;
   onboarded: boolean;

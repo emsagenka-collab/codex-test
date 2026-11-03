@@ -24,25 +24,66 @@ export function tokens(text: string) {
 }
 // Only common Turkish inflections are accepted; substring matches never establish an occurrence.
 const suffix =
-  /^(?:lar|ler|ın|in|un|ün|nın|nin|nun|nün|ı|i|u|ü|yı|yi|yu|yü|a|e|ya|ye|da|de|ta|te|dan|den|tan|ten|la|le|yla|yle|dır|dir|dur|dür|tır|tir|tur|tür|sı|si|su|sü|ını|ini|unu|ünü|ına|ine|una|üne|ında|inde|unda|ünde|ından|inden|undan|ünden|ları|leri|ların|lerin|larını|lerini|lara|lere|larda|lerde|lardan|lerden|ım|im|um|üm|ımız|imiz|umuz|ümüz)$/;
+  /^(?:lar|ler|ın|in|un|ün|nın|nin|nun|nün|ı|i|u|ü|yı|yi|yu|yü|a|e|ya|ye|da|de|ta|te|dan|den|tan|ten|la|le|yla|yle|dır|dir|dur|dür|tır|tir|tur|tür|sı|si|su|sü|sını|sini|sunu|sünü|sına|sine|suna|süne|sında|sinde|sunda|sünde|sından|sinden|sundan|sünden|sının|sinin|sunun|sünün|ıyla|iyle|uyla|üyle|sıyla|siyle|suyla|süyle|ını|ini|unu|ünü|ına|ine|una|üne|ında|inde|unda|ünde|ından|inden|undan|ünden|ları|leri|ların|lerin|larının|lerinin|larını|lerini|larına|lerine|larında|lerinde|larından|lerinden|lara|lere|larda|lerde|lardan|lerden|ım|im|um|üm|ımız|imiz|umuz|ümüz)$/;
+
+// Explicit historical spellings and established vowel-loss stems. Neither these
+// aliases nor matching modernize the stored quotation or use substring guesses.
+const historicalForms: Record<string, string[]> = {
+  antlaşma: ["andlaşma"],
+  tövbe: ["tevbe"],
+  tevhit: ["tevhid"],
+  ashap: ["ashab"],
+  harp: ["harb"],
+  irşat: ["irşad"],
+  mürşit: ["mürşid"],
+  itikat: ["itikad"],
+  şehadet: ["şahadet"],
+};
+const vowelLoss: Record<string, string> = {
+  akıl: "akl",
+  fikir: "fikr",
+  hüküm: "hükm",
+  ilim: "ilm",
+  izin: "izn",
+  emir: "emr",
+  sabır: "sabr",
+  şükür: "şükr",
+  ömür: "ömr",
+  vakit: "vakt",
+  nakil: "nakl",
+  fetih: "feth",
+  hısım: "hısm",
+  rızık: "rızk",
+  lütuf: "lütf",
+};
+const softened: Record<string, string> = { k: "ğ", t: "d", p: "b", ç: "c" };
+/** Compile once per lemma; the returned predicate accepts normalized tokens. */
+export function wordMatcher(word: string) {
+  const key = normalize(word);
+  const forms = [key, ...(historicalForms[key] || [])].map((form) => ({
+    form,
+    stem:
+      vowelLoss[form] ||
+      (softened[form.at(-1) || ""]
+        ? form.slice(0, -1) + softened[form.at(-1)!]
+        : ""),
+  }));
+  return (token: string) =>
+    forms.some(
+      ({ form, stem }) =>
+        token === form ||
+        (token.startsWith(form) && suffix.test(token.slice(form.length))) ||
+        (!!stem &&
+          token.startsWith(stem) &&
+          /^[aeıioöuü]/u.test(token.slice(stem.length)) &&
+          suffix.test(token.slice(stem.length))),
+    );
+}
 export function matches(token: string, word: string) {
-  const t = normalize(token),
-    w = normalize(word);
-  if (t === w || (t.startsWith(w) && suffix.test(t.slice(w.length))))
-    return true;
-  const softened: Record<string, string> = { k: "ğ", t: "d", p: "b", ç: "c" };
-  const stem = softened[w.at(-1) || ""]
-    ? w.slice(0, -1) + softened[w.at(-1)!]
-    : "";
-  return (
-    !!stem &&
-    t.startsWith(stem) &&
-    /^[aeıioöuü]/.test(t.slice(stem.length)) &&
-    suffix.test(t.slice(stem.length))
-  );
+  return wordMatcher(word)(normalize(token));
 }
 export function containsWord(sentence: string, word: string) {
-  return tokens(sentence).some((t) => matches(t, word));
+  return tokens(sentence).some(wordMatcher(word));
 }
 export function splitSections(text: string) {
   // Preserve short source paragraphs too; sentence eligibility must not change

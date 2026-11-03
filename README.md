@@ -25,7 +25,7 @@ Die App ist für eine einzelne Person auf einer lokalen/vertrauten Maschine ausg
 ## Was funktioniert
 
 - 1–100 einstellbare neue Tageswörter (standardmäßig 2) je Kalendertag der eingestellten Zeitzone (standardmäßig Berlin). Die Auswahl bleibt beim Neuladen bestehen. Buch- und Niveauwechsel starten sofort eine passende eigene Auswahl; bisherige Bewertungen bleiben erhalten. Änderungen der Wörterzahl gelten sofort; bereits bewertete Tageswörter bleiben auch bei einem niedrigeren Ziel erhalten. Verpasste Tage werden nicht nachgeholt.
-- Auswahl nach Häufigkeit innerhalb der gewählten Stufe (B1, B2 oder C1). Das Offline-Wörterbuch enthält 24 bewusst ausgewählte, gehobene Begriffe statt Eigennamen oder Funktionswörter. Einfache Beugungen und häufige Stamm-Lautwechsel werden erkannt; dies ist keine vollständige türkische Morphologieanalyse.
+- Auswahl nach Häufigkeit innerhalb der gewählten Stufe (B1, B2 oder C1). Das Offline-Wörterbuch enthält 353 Lernbegriffe, darunter gehobene, historische und religiöse Wörter. Die Stufen sind eine didaktische Orientierung nach Wortschwierigkeit, keine offizielle CEFR-Wortliste oder Einstufungsprüfung. Häufige Beugungen, ausgewählte Vokalausfälle und belegte historische Schreibvarianten werden erkannt; dies ist keine vollständige türkische Morphologieanalyse.
 - Originalsatz, Hervorhebung, Quelle, Abschnitt, Wortwissen und aufklappbarer Kontext. Jeder ausgewählte Satz wird gegen den tatsächlich importierten Text geprüft. Alle Vorkommen bleiben in SQLite erhalten.
 - Bewertungen, Wiederholungsplanung, umdrehbare Wiederholungskarten, Wortsuche und Statusfilter; fällige Wiederholungen sind zusätzlich zu den neuen Tageswörtern verfügbar.
 - Fortschritt, Lernserie, Niveau, große Schrift, heller/dunkler/System-Modus, türkische Sprachausgabe über die auf dem Gerät verfügbaren Browserstimmen.
@@ -45,6 +45,25 @@ Das bedeutet den Abschluss dieser erkannten Buchauswahl, keine allgemeine
 CEFR-Zertifizierung. Bei null passenden Wörtern erscheint ein neutraler Hinweis
 statt einer unberechtigten Glückwunschmeldung. Wiederholungen werden nicht
 ungefragt in die neuen Tageswörter gemischt.
+
+## Erweiterter Buchwortschatz
+
+Die ursprüngliche Wortliste mit 24 Begriffen bleibt als eigenständige Demo erhalten.
+Für eigene Bücher wird zusätzlich `lib/book-vocabulary.ts` verwendet. Jeder Eintrag
+enthält eine deutsche Bedeutung und Erklärung, eine türkische Umschreibung und
+verwandte Wörter. Neue Buchwörter bekommen keine erfundenen Beispielsätze: Nur
+passende vollständige Sätze aus dem aktiven Buch schalten sie für eine Stufe frei.
+Namen, bloße Überschriften und Tabellen ergeben dadurch keine Lernkarten.
+
+Die Erweiterung greift auch beim Öffnen bereits importierter Bücher. Vorhandene
+Wort-IDs, Definitionen, Bewertungen und Wiederholungsdaten bleiben erhalten;
+fehlende Wörter werden aus den gespeicherten Originalabschnitten ergänzt.
+Ein erneuter Import ist für die Wortauswahl nicht nötig. Fehlende alte PDF-Seiten-
+zuordnungen können weiterhin durch erneuten Import ergänzt werden.
+In den Einstellungen stehen die verfügbaren Lernwortzahlen für B1, B2 und C1.
+Die Anzahl hängt vom Buch und seinen geeigneten Beispielsätzen ab. Der Offline-
+Katalog ist weiterhin begrenzt; unbekannte Wörter werden nicht als automatisch
+übersetzt oder als vollständig analysiert ausgegeben.
 
 ## Beispielsätze aus dem Fließtext
 
@@ -126,7 +145,8 @@ Die gespeicherte Lernzeit ist eine persönliche Vormerkung. Hintergrund-/Push-Be
 - `lib/db.ts`: SQLite-Schema, Transaktionen, Tagesauswahl und Persistenz.
 - `lib/learning.ts`: Kalenderdatum, Morphologie-Heuristik, Textsegmentierung, Lernintervalle.
 - `lib/importer.ts`: lokale TXT-/PDF-/EPUB-Extraktion.
-- `lib/lexicon.ts`: kuratiertes Wörterbuch und ausdrücklich eigenständige Demotexte.
+- `lib/lexicon.ts`: Demowörterbuch und Zusammenstellung des erweiterten Lernwortschatzes.
+- `lib/book-vocabulary.ts`: zusätzliche Worterklärungen für importierte Bücher, ohne erfundene Quellenbeispiele.
 - `lib/ai.ts`: optionale serverseitige Analyse mit Quellenprüfung.
 - `app/api/[...action]/route.ts`: JSON-/Multipart-API, Eingabeprüfung und Fehlerantworten.
 

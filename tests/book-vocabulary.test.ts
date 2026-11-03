@@ -20,7 +20,7 @@ test("the extended offline dictionary has distinct teaching entries without fabr
     const entries = learningLexicon.filter(
       (entry) => entry.difficulty === level,
     );
-    assert.ok(entries.length >= 500, `Level ${level}: ${entries.length}`);
+    assert.ok(entries.length >= 1000, `Level ${level}: ${entries.length}`);
   }
   assert.equal(
     new Set(learningLexicon.map((e) => normalize(e.word))).size,

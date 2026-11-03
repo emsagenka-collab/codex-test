@@ -12,6 +12,7 @@ test("known word forms rejoin spaces and line breaks while preserving spelling a
     ["tefek-\r\nkür", "tefekkür"],
     ["iba- ret", "ibaret"],
     ["tefek\u00adkür", "tefekkür"],
+    ["O gün dem-\nirci hakkında düşündü.", "O gün demirci hakkında düşündü."],
     ["PEYGAMBE RİMİZ", "PEYGAMBERİMİZ"],
   ] as const) {
     const result = repairPdfWordBreaks(raw);

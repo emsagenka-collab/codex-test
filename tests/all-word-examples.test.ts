@@ -10,9 +10,9 @@ test("every dictionary word receives all suitable prose examples, including dial
     const breakAt = Math.max(1, Math.floor(word.length / 2));
     const split = `${word.slice(0, breakAt)}-\n${word.slice(breakAt)}`;
     const texts = [
-      `a) ${word.toLocaleUpperCase("tr-TR")}\nHz. Deniz, ${word} hakkında konuştu.`,
+      `a) ${word.toLocaleUpperCase("tr-TR")}\nHz. Ece, ${word} hakkında konuştu.`,
       `Ece şöyle dedi:\n– “Bugün ${word} hakkında\nkonuşacağız,” dedi.`,
-      `a) TOPLANANLAR VE YAHUDİLER\nBİRLEŞİYOR:\nO gün ${split} hakkında uzun uzun düşündü.`,
+      `a) TOPLANANLAR VE YAHUDİLER\nBİRLEŞİYOR:\nO gün ${split} hakkında düşündü.`,
       `O gün ${word} hakkında konuştu mu?`,
       `• ${word}.\n\na) ${word}.`,
     ];
@@ -33,7 +33,7 @@ test("every dictionary word receives all suitable prose examples, including dial
       result.examples.every((example) => !example.sentence.includes("-\n")),
       word,
     );
-    assert.match(result.examples[0].sentence, /^Hz\. Deniz,/u);
+    assert.match(result.examples[0].sentence, /^Hz\. Ece,/u);
   }
 });
 

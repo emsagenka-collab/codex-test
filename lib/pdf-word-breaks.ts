@@ -208,8 +208,16 @@ export function repairPdfWordBreaks(
       if (
         knownForms.has(candidateForm) ||
         (explicitBreak && documentForms.has(candidateForm))
-      )
-        best = { last: j, replacement: candidate };
+      ) {
+        // Do not consume the start of a hyphenated word as the end of a
+        // neighboring word: "gün dem-\nirci" must not become "gündem-\nirci".
+        const next = tokens[j + 1];
+        const followingGap = next
+          ? text.slice(tokens[j].index! + tokens[j][0].length, next.index!)
+          : "";
+        if (!(/[-\u00ad]/u.test(followingGap) && validGap(followingGap)))
+          best = { last: j, replacement: candidate };
+      }
     }
     if (best) {
       const start = tokens[i].index!,

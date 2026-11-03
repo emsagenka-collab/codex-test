@@ -25,7 +25,7 @@ Die App ist für eine einzelne Person auf einer lokalen/vertrauten Maschine ausg
 ## Was funktioniert
 
 - 1–100 einstellbare neue Tageswörter (standardmäßig 2) je Kalendertag der eingestellten Zeitzone (standardmäßig Berlin). Die Auswahl bleibt beim Neuladen bestehen. Buch- und Niveauwechsel starten sofort eine passende eigene Auswahl; bisherige Bewertungen bleiben erhalten. Änderungen der Wörterzahl gelten sofort; bereits bewertete Tageswörter bleiben auch bei einem niedrigeren Ziel erhalten. Verpasste Tage werden nicht nachgeholt.
-- Auswahl nach Häufigkeit innerhalb der gewählten Stufe (B1, B2 oder C1). Das Offline-Wörterbuch enthält 1.524 Lernbegriffe, darunter gehobene, historische und religiöse Wörter. Die Stufen sind eine didaktische Orientierung nach Wortschwierigkeit, keine offizielle CEFR-Wortliste oder Einstufungsprüfung. Häufige Beugungen, ausgewählte Vokalausfälle und belegte historische Schreibvarianten werden erkannt; dies ist keine vollständige türkische Morphologieanalyse.
+- Auswahl nach Häufigkeit innerhalb der gewählten Stufe (B1, B2 oder C1). Das Offline-Wörterbuch enthält 3.024 Lernbegriffe, darunter gehobene, historische und religiöse Wörter. Die Stufen sind eine didaktische Orientierung nach Wortschwierigkeit, keine offizielle CEFR-Wortliste oder Einstufungsprüfung. Häufige Beugungen, ausgewählte Vokalausfälle und belegte historische Schreibvarianten werden erkannt; dies ist keine vollständige türkische Morphologieanalyse.
 - Originalsatz, Hervorhebung, Quelle, Abschnitt, Wortwissen und aufklappbarer Kontext. Jeder ausgewählte Satz wird gegen den tatsächlich importierten Text geprüft. Alle Vorkommen bleiben in SQLite erhalten.
 - Bewertungen, Wiederholungsplanung, umdrehbare Wiederholungskarten, Wortsuche und Statusfilter; fällige Wiederholungen sind zusätzlich zu den neuen Tageswörtern verfügbar.
 - Fortschritt, Lernserie, Niveau, große Schrift, heller/dunkler/System-Modus, türkische Sprachausgabe über die auf dem Gerät verfügbaren Browserstimmen.
@@ -61,15 +61,15 @@ Wort-IDs, Definitionen, Bewertungen und Wiederholungsdaten bleiben erhalten;
 fehlende Wörter werden aus den gespeicherten Originalabschnitten ergänzt.
 Ein erneuter Import ist für die Wortauswahl nicht nötig. Fehlende alte PDF-Seiten-
 zuordnungen können weiterhin durch erneuten Import ergänzt werden.
-Das Offline-Wörterbuch umfasst 509 B1-, 510 B2- und 505 C1-Einträge.
+Das Offline-Wörterbuch umfasst 1.009 B1-, 1.010 B2- und 1.005 C1-Einträge.
 Die normalisierten Lemmata sind über alle Stufen eindeutig; Beugungen werden
-nicht als zusätzliche Einträge gezählt. Tests sichern mindestens 500 Einträge
+nicht als zusätzliche Einträge gezählt. Tests sichern mindestens 1.000 Einträge
 je Stufe sowie vollständige Bedeutungen, Erklärungen und türkische Umschreibungen.
 Die eigenständige Demo bleibt bei 24 eigens verfassten Lerntexten.
 
 In den Einstellungen stehen die Wörterbuch-Gesamtzahlen und getrennt davon die
 Lernwortzahlen, die mit passenden Sätzen im aktiven Buch belegt sind. Mindestens
-500 Wörter pro Stufe im Katalog bedeuten nicht, dass jedes Buch diese enthält.
+1.000 Wörter pro Stufe im Katalog bedeuten nicht, dass jedes Buch diese enthält.
 Die Anzahl hängt vom Buch und seinen geeigneten Beispielsätzen ab. Der Offline-
 Katalog ist weiterhin begrenzt; unbekannte Wörter werden nicht als automatisch
 übersetzt oder als vollständig analysiert ausgegeben.

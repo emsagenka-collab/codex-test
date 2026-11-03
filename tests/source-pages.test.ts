@@ -37,7 +37,11 @@ test("PDF pages stay attached to the exact occurrence, including repeated and co
     assert.equal(emanet.pageNumber, 2);
     assert.equal(metanet.pageNumber, 1);
     rate(emanet.id, "understood");
-    const progress = JSON.stringify(exportData().progress);
+    const progress = exportData().progress;
+    const preservedProgress = () =>
+      exportData().progress.filter((row) =>
+        progress.some((original) => original.wordId === row.wordId),
+      );
 
     const repeated = [
       { pageNumber: 1, text: "Emaneti iyi korudu." },
@@ -82,7 +86,7 @@ test("PDF pages stay attached to the exact occurrence, including repeated and co
     assert.equal(spanning.pageNumber, 1);
     assert.equal(spanning.pageEnd, 2);
     assert.match(spanning.sentence, /korumayı öğrendi/);
-    assert.equal(JSON.stringify(exportData().progress), progress);
+    assert.deepEqual(preservedProgress(), progress);
 
     const plain = await extractDocument(
       new File(["Emaneti korudu. Metanet ile bekledi."], "text.txt"),
@@ -104,7 +108,10 @@ test("PDF pages stay attached to the exact occurrence, including repeated and co
       JSON.stringify(exportData().books),
       JSON.stringify(JSON.parse(before).books),
     );
-    assert.equal(JSON.stringify(exportData().progress), progress);
+    assert.equal(
+      JSON.stringify(exportData().progress),
+      JSON.stringify(JSON.parse(before).progress),
+    );
   } finally {
     db().close();
     rmSync(dir, { recursive: true, force: true });

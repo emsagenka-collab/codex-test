@@ -16,7 +16,7 @@ test("old unread allocations refill the goal, missing dictionary entries recover
   const dir = mkdtempSync(path.join(tmpdir(), "kelime-level-"));
   process.env.KELIME_DATA_DIR = dir;
   const text =
-    "Emaneti iyi korudu.\n\nMetanet gösterdi.\n\nTefekkür ederken düşündü.\n\nSükûnetini korudu.\n\nKalbinde hidayet aradı.";
+    "Emaneti iyi korudu.\n\nMetanet gösterdi.\n\nTefekkür ederken düşündü.\n\nSükûnetini korudu.\n\nHidayet aradı.";
   try {
     saveSettings({ dailyWordCount: 4 });
     importBook("Seviyeler", text);

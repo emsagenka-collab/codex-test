@@ -1878,6 +1878,13 @@ details[open] > summary > svg {
   }
 }
 @media (max-width: 760px) {
+  main {
+    overflow-x: clip;
+  }
+  .tab-content {
+    min-height: 70svh;
+    touch-action: pan-y pinch-zoom;
+  }
   .sidebar {
     display: none;
   }

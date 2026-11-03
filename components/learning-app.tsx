@@ -29,6 +29,7 @@ import {
 import WordCard from "./word-card";
 import LevelCompletion from "./level-completion";
 import BookLibrary from "./book-library";
+import SwipeNavigation from "./swipe-navigation";
 import Modal from "./modal";
 import { ImportForm, SettingsForm } from "./forms";
 import { Highlight, formatDate, difficulty } from "./shared";
@@ -265,7 +266,12 @@ export default function LearningApp() {
             </button>
           </div>
         </header>
-        <main>
+        <SwipeNavigation
+          index={tabs.findIndex((t) => t.id === tab)}
+          count={tabs.length}
+          disabled={busy || !!modal || !!detail || !data}
+          onChange={(index) => navigate(tabs[index].id)}
+        >
           {error && (
             <div className="error" role="alert">
               <span>{error}</span>
@@ -578,13 +584,8 @@ export default function LearningApp() {
                               word={reviewWord.word}
                             />
                           </blockquote>
-                          {reviewWord.sentenceTranslation ? (
+                          {reviewWord.sentenceTranslation && (
                             <p>{reviewWord.sentenceTranslation}</p>
-                          ) : (
-                            <p className="muted">
-                              Für diesen Originalsatz ist keine geprüfte
-                              Übersetzung hinterlegt.
-                            </p>
                           )}
                           <details>
                             <summary>
@@ -895,7 +896,7 @@ export default function LearningApp() {
               </footer>
             </>
           )}
-        </main>
+        </SwipeNavigation>
       </div>
       <nav className="bottom-nav" aria-label="Mobile Navigation">
         {tabs.map((t) => (

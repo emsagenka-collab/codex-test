@@ -39,8 +39,8 @@ export function ImportForm({
       }}
     >
       <p className="modal-description">
-        Importiere deinen eigenen Siyer-i Nebi-Text. Wir suchen anspruchsvolle
-        Wörter und behalten den Originalsatz als Beleg.
+        Importiere dein eigenes Buch. Wir suchen anspruchsvolle Wörter und
+        behalten den Originalsatz als Beleg.
       </p>
       <div
         className={"dropzone " + (drag ? "drag" : "")}
@@ -150,7 +150,6 @@ export function ImportForm({
 }
 export function SettingsForm({
   settings,
-  levelCounts,
   dictionaryCounts,
   busy,
   onSave,
@@ -159,7 +158,6 @@ export function SettingsForm({
   aiAvailable,
 }: {
   settings: Settings;
-  levelCounts: State["levelCounts"];
   dictionaryCounts: State["dictionaryCounts"];
   busy: boolean;
   onSave: (s: Settings) => Promise<void>;
@@ -192,19 +190,11 @@ export function SettingsForm({
           step={1}
           required
           value={Number.isNaN(draft.dailyWordCount) ? "" : draft.dailyWordCount}
-          aria-describedby="daily-word-count-help"
           onChange={(e) =>
             setDraft((d) => ({ ...d, dailyWordCount: e.target.valueAsNumber }))
           }
         />
       </label>
-      <p className="muted" id="daily-word-count-help">
-        1–100 Wörter pro Tag. Gilt direkt nach dem Speichern. Bereits bewertete
-        Tageswörter bleiben erhalten. Noch nicht bewertete Wörter früherer
-        Tagesauswahlen werden wieder angeboten. Die Auswahl bleibt auf deinem
-        Niveau. Ist dessen Buchauswahl bearbeitet, kannst du aufsteigen, ein
-        anderes Buch importieren oder weiter wiederholen.
-      </p>
       <label className="setting-field">
         Dein Türkisch-Niveau
         <select
@@ -219,11 +209,6 @@ export function SettingsForm({
       <p className="muted" aria-label="Offline-Wörterbuch nach Niveau">
         Offline-Wörterbuch: B1: {dictionaryCounts.B1} · B2:{" "}
         {dictionaryCounts.B2} · C1: {dictionaryCounts.C1}.
-      </p>
-      <p className="muted" aria-label="Lernwortschatz im aktuellen Buch">
-        Davon in deinem Buch mit Beispielsätzen: B1: {levelCounts.B1} · B2:{" "}
-        {levelCounts.B2} · C1: {levelCounts.C1}. Die Stufen sind eine
-        Orientierung für die Wortschwierigkeit.
       </p>
       <label className="setting-field">
         Darstellung

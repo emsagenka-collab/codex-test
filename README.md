@@ -67,8 +67,8 @@ nicht als zusätzliche Einträge gezählt. Tests sichern mindestens 1.000 Eintr�
 je Stufe sowie vollständige Bedeutungen, Erklärungen und türkische Umschreibungen.
 Die eigenständige Demo bleibt bei 24 eigens verfassten Lerntexten.
 
-In den Einstellungen stehen die Wörterbuch-Gesamtzahlen und getrennt davon die
-Lernwortzahlen, die mit passenden Sätzen im aktiven Buch belegt sind. Mindestens
+In den Einstellungen stehen die Wörterbuch-Gesamtzahlen. Für die Tagesauswahl
+zählen die mit passenden Sätzen im aktiven Buch belegten Lernwörter. Mindestens
 1.000 Wörter pro Stufe im Katalog bedeuten nicht, dass jedes Buch diese enthält.
 Die Anzahl hängt vom Buch und seinen geeigneten Beispielsätzen ab. Der Offline-
 Katalog ist weiterhin begrenzt; unbekannte Wörter werden nicht als automatisch

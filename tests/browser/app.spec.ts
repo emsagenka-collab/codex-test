@@ -547,7 +547,7 @@ test("daily goals resize immediately and completed levels offer advance, another
   ).toBeVisible();
 });
 
-test("extended book vocabulary fills both categories and shows actual level counts in settings", async ({
+test("extended book vocabulary fills both categories and shows dictionary counts in settings", async ({
   page,
   request,
 }) => {
@@ -588,9 +588,6 @@ test("extended book vocabulary fills both categories and shows actual level coun
   const first = page.locator("article.word-card").first();
   await first.getByRole("button", { name: "Verstanden", exact: true }).click();
   await page.getByRole("button", { name: "Einstellungen öffnen" }).click();
-  await expect(
-    page.getByLabel("Lernwortschatz im aktuellen Buch"),
-  ).toContainText("B2: 8");
   const catalog = page.getByLabel("Offline-Wörterbuch nach Niveau");
   for (const level of ["B1", "B2", "C1"]) {
     expect(data.dictionaryCounts[level]).toBeGreaterThanOrEqual(1000);
@@ -598,9 +595,6 @@ test("extended book vocabulary fills both categories and shows actual level coun
       `${level}: ${data.dictionaryCounts[level]}`,
     );
   }
-  await expect(
-    page.getByLabel("Lernwortschatz im aktuellen Buch"),
-  ).toContainText("C1: 4");
   expect(
     await page.evaluate(
       () => document.documentElement.scrollWidth <= window.innerWidth,

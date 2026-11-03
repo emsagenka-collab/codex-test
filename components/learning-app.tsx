@@ -318,9 +318,9 @@ export default function LearningApp() {
                       </div>
                       <h2>Ein Buch. Viele neue Perspektiven.</h2>
                       <p>
-                        Entdecke anspruchsvolle türkische Wörter aus deinem
-                        eigenen Siyer-i Nebi-Text. {dailyGoalText} pro Tag – mit
-                        Raum zum Verstehen.
+                        Entdecke anspruchsvolle türkische Wörter aus deinen
+                        eigenen Büchern. {dailyGoalText} pro Tag – mit Raum zum
+                        Verstehen.
                       </p>
                       <div className="welcome-steps">
                         <span>
@@ -916,7 +916,6 @@ export default function LearningApp() {
             data && (
               <SettingsForm
                 settings={data.settings}
-                levelCounts={data.levelCounts}
                 dictionaryCounts={data.dictionaryCounts}
                 busy={busy}
                 aiAvailable={data.aiAvailable}

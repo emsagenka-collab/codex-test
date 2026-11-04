@@ -2,6 +2,10 @@ import { detectRunningHeaders } from "./running-headers";
 import { indexBookSource, type SourceExample } from "./book-source";
 import { exampleSentences } from "./example-sentences";
 import { DatabaseSync } from "node:sqlite";
+import {
+  dictionaryReviewVersion,
+  reviewStoredDefinition,
+} from "./dictionary-review";
 import { mkdirSync } from "node:fs";
 import path from "node:path";
 import {
@@ -661,6 +665,23 @@ export function state(): State {
   let dailyIds: number[];
   db().exec("BEGIN IMMEDIATE");
   try {
+    if (
+      one("SELECT value FROM AppMeta WHERE key='dictionaryReview'")?.value !==
+      dictionaryReviewVersion
+    ) {
+      const update = db().prepare(
+        "UPDATE VocabularyWord SET word=?,data=? WHERE id=?",
+      );
+      for (const row of all("SELECT id,data FROM VocabularyWord")) {
+        const old = JSON.parse(String(row.data)) as Entry;
+        const revised = reviewStoredDefinition(old);
+        if (revised !== old)
+          update.run(revised.word, JSON.stringify(revised), Number(row.id));
+      }
+      db()
+        .prepare("INSERT OR REPLACE INTO AppMeta VALUES ('dictionaryReview',?)")
+        .run(dictionaryReviewVersion);
+    }
     vocab = vocabulary();
     const level = config.level === "B1" ? 1 : config.level === "C1" ? 3 : 2;
     const activeBook = Number(

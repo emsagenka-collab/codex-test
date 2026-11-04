@@ -1,6 +1,6 @@
 import { detectRunningHeaders, stripRunningHeaders } from "./running-headers";
 import { exampleSentences } from "./example-sentences";
-import { wordMatcher, normalize, tokens } from "./learning";
+import { wordMatcher, normalizeToken, tokens } from "./learning";
 import { bookWordForms, repairTurkishText } from "./text-repair";
 
 export type SourceSection = { id: number; sectionNumber: number; text: string };
@@ -88,7 +88,7 @@ export function indexBookSource(sections: SourceSection[], legacy: boolean) {
     repairText: (text: string) =>
       repairTurkishText(text, legacy, documentForms),
     forWord(word: string) {
-      const key = normalize(word);
+      const key = normalizeToken(word);
       if (!cache.has(key)) {
         const matches = wordMatcher(key);
         let frequency = 0;

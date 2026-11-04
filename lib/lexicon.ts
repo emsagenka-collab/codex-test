@@ -1,5 +1,6 @@
 import type { Entry } from "./types";
 import { bookVocabulary } from "./book-vocabulary";
+import { applyDictionaryReview } from "./dictionary-review";
 // Original teaching material, written for this app. These sentences are NOT quotations from Siyer-i Nebi.
 const rows = [
   [
@@ -291,31 +292,34 @@ const rows = [
     "Die Handlungen einer Person werden beschrieben. Sie gelten als ehrlich motiviert. Ihlas richtet den Blick auf die innere Absicht.",
   ],
 ] as const;
-export const lexicon: Entry[] = rows.map(
-  ([
-    word,
-    meaning,
-    explanation,
-    modern,
-    difficulty,
-    note,
-    related,
-    demo,
-    translation,
-    context,
-  ]) => ({
-    word,
-    meaning,
-    explanation,
-    modern,
-    difficulty,
-    note,
-    related,
-    demo,
-    translation,
-    context,
-  }),
-);
+export const lexicon: Entry[] = rows
+  .map(
+    ([
+      word,
+      meaning,
+      explanation,
+      modern,
+      difficulty,
+      note,
+      related,
+      demo,
+      translation,
+      context,
+    ]) => ({
+      word,
+      meaning,
+      explanation,
+      modern,
+      difficulty,
+      note,
+      related,
+      demo,
+      translation,
+      context,
+    }),
+  )
+  .map(applyDictionaryReview);
+// Definitions may be reviewed; authored demo quotations and translations stay intact.
 export const demoText = lexicon.map((e) => e.demo).join("\n\n");
 // Keep the authored 24-word demo separate from the expandable book dictionary.
 export const learningLexicon: Entry[] = [...lexicon, ...bookVocabulary];

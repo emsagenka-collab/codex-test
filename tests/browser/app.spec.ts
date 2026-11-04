@@ -604,7 +604,7 @@ test("extended book vocabulary fills both categories and shows dictionary counts
   await page.getByRole("button", { name: "Einstellungen öffnen" }).click();
   const catalog = page.getByLabel("Offline-Wörterbuch nach Niveau");
   for (const level of ["B1", "B2", "C1"]) {
-    expect(data.dictionaryCounts[level]).toBeGreaterThanOrEqual(2000);
+    expect(data.dictionaryCounts[level]).toBeGreaterThanOrEqual(1000);
     await expect(catalog).toContainText(
       `${level}: ${data.dictionaryCounts[level]}`,
     );

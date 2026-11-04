@@ -20,7 +20,13 @@ export function normalize(value: string) {
     .replaceAll("û", "u");
 }
 export function tokens(text: string) {
-  return [...text.matchAll(/[\p{L}]+/gu)].map((m) => normalize(m[0]));
+  return [...text.matchAll(/[\p{L}]+/gu)].map((m) => normalizeToken(m[0]));
+}
+// Stable database keys remain accent-folded. Source matching must still keep
+// well-established contrasts such as hala/hâlâ, adet/âdet and kar/kâr apart.
+export function normalizeToken(value: string) {
+  const raw = value.normalize("NFC").toLocaleLowerCase("tr-TR");
+  return /^(?:hâlâ|âdet|kâr|vâris)/u.test(raw) ? raw : normalize(raw);
 }
 // Only common Turkish inflections are accepted; substring matches never establish an occurrence.
 const suffix =
@@ -62,14 +68,16 @@ const softened: Record<string, string> = { k: "ğ", t: "d", p: "b", ç: "c" };
 /** Compile once per lemma; the returned predicate accepts normalized tokens. */
 export function wordMatcher(word: string) {
   const key = normalize(word);
-  const forms = [key, ...(historicalForms[key] || [])].map((form) => ({
-    form,
-    stem:
-      vowelLoss[form] ||
-      (softened[form.at(-1) || ""]
-        ? form.slice(0, -1) + softened[form.at(-1)!]
-        : ""),
-  }));
+  const forms = [normalizeToken(word), ...(historicalForms[key] || [])].map(
+    (form) => ({
+      form,
+      stem:
+        vowelLoss[form] ||
+        (softened[form.at(-1) || ""]
+          ? form.slice(0, -1) + softened[form.at(-1)!]
+          : ""),
+    }),
+  );
   const matches = (token: string) =>
     forms.some(
       ({ form, stem }) =>
@@ -91,7 +99,7 @@ export function wordMatcher(word: string) {
   });
 }
 export function matches(token: string, word: string) {
-  return wordMatcher(word)(normalize(token));
+  return wordMatcher(word)(normalizeToken(token));
 }
 export function containsWord(sentence: string, word: string) {
   return tokens(sentence).some(wordMatcher(word));

@@ -1,5 +1,6 @@
 import type { Entry } from "./types";
 import { expandedVocabulary } from "./vocabulary";
+import { applyDictionaryReview } from "./dictionary-review";
 
 // Authored learning definitions, not quotations or official CEFR word lists.
 // These entries intentionally have no invented source sentence or translation.
@@ -2657,4 +2658,4 @@ export const bookVocabulary: Entry[] = [
     context: "",
   })),
   ...expandedVocabulary,
-];
+].map(applyDictionaryReview);

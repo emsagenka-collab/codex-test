@@ -57,22 +57,42 @@ passende vollständige Sätze aus dem aktiven Buch schalten sie für eine Stufe 
 Namen, bloße Überschriften und Tabellen ergeben dadurch keine Lernkarten.
 
 Die Erweiterung greift auch beim Öffnen bereits importierter Bücher. Vorhandene
-Wort-IDs, Definitionen, Bewertungen und Wiederholungsdaten bleiben erhalten;
+Wort-IDs, Bewertungen und Wiederholungsdaten bleiben erhalten;
 fehlende Wörter werden aus den gespeicherten Originalabschnitten ergänzt.
 Ein erneuter Import ist für die Wortauswahl nicht nötig. Fehlende alte PDF-Seiten-
 zuordnungen können weiterhin durch erneuten Import ergänzt werden.
-Das Offline-Wörterbuch umfasst 2.009 B1-, 2.010 B2- und 2.005 C1-Einträge.
+Das Offline-Wörterbuch umfasst nach der Niveauprüfung 2.058 B1-, 2.173 B2- und 1.793 C1-Einträge.
 Die normalisierten Lemmata sind über alle Stufen eindeutig; Beugungen werden
-nicht als zusätzliche Einträge gezählt. Tests sichern mindestens 2.000 Einträge
-je Stufe sowie vollständige Bedeutungen, Erklärungen und türkische Umschreibungen.
+nicht als zusätzliche Einträge gezählt. Die Gesamtzahl bleibt bei 6.024; Niveauausreißer werden umgeordnet, statt
+starre Quoten zu erhalten. Tests sichern eindeutige Lemmata und vollständige
+Bedeutungen, Erklärungen und türkische Umschreibungen.
 Die eigenständige Demo bleibt bei 24 eigens verfassten Lerntexten.
 
 In den Einstellungen stehen die Wörterbuch-Gesamtzahlen. Für die Tagesauswahl
-zählen die mit passenden Sätzen im aktiven Buch belegten Lernwörter. Mindestens
-2.000 Wörter pro Stufe im Katalog bedeuten nicht, dass jedes Buch diese enthält.
+zählen die mit passenden Sätzen im aktiven Buch belegten Lernwörter. Viele
+Wörter pro Stufe im Katalog bedeuten nicht, dass jedes Buch diese enthält.
 Die Anzahl hängt vom Buch und seinen geeigneten Beispielsätzen ab. Der Offline-
 Katalog ist weiterhin begrenzt; unbekannte Wörter werden nicht als automatisch
 übersetzt oder als vollständig analysiert ausgegeben.
+
+## Sprachliche Wörterbuchprüfung
+
+Am 4. November 2026 wurden alle 6.024 Einträge sprachlich durchgesehen und 880
+Einträge überarbeitet. Die Korrekturen betreffen Bedeutungen, deutsche Erklärungen,
+türkische Umschreibungen, klare Niveauausreißer und zwei eindeutige Schreibweisen.
+Die Stufen sind weiterhin didaktische Orientierung, keine amtliche CEFR-Zertifizierung.
+Der [Prüfbericht](docs/woerterbuch-pruefung-2026-11-04.md) nennt Umfang und offene Fälle.
+
+Beim Öffnen werden gespeicherte ursprüngliche Offline-Einträge einmalig aktualisiert.
+Wort-IDs, Bewertungen, Originaltexte, Seitenangaben und vorhandene Satzübersetzungen
+bleiben erhalten. Von der alten Offline-Definition abweichende eigene oder KI-erstellte
+Definitionen werden nicht überschrieben. Ältere Sicherungen werden nach dem Import
+auf dieselbe Weise aktualisiert. Geänderte Niveaus gelten auch für die nächste Tagesauswahl.
+
+Die Wortsuche unterscheidet bedeutungstragende Zirkumflexe bei `hala/hâlâ`,
+`adet/âdet`, `kar/kâr` und `varis/vâris`. Die Datenbank-IDs bleiben dabei stabil;
+Originalzitate werden nicht umgeschrieben. Fehlende bedeutungstragende Zeichen
+werden nicht durch eine unbelegte Bedeutungsannahme ergänzt.
 
 ## Navigation am Handy
 

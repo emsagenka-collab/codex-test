@@ -190,7 +190,7 @@ werden nicht angezeigt, weil Zeilenumbrüche von der Extraktion abhängen.
 
 ## Import & optionale KI
 
-Unterstützt werden UTF-8-TXT/Markdown, **PDFs mit Textebene** und unverschlüsselte EPUBs in Spine-Lesereihenfolge, maximal 15 MB und 3 Millionen extrahierte Zeichen. PDF maximal 1.000 Seiten, EPUB maximal 1.000 Kapitel. Gescanntes PDF benötigt vorher OCR; DRM wird nicht umgangen. Bitte nur eigene oder berechtigt nutzbare Texte importieren.
+Unterstützt werden UTF-8-TXT/Markdown, **PDFs mit Textebene** und unverschlüsselte EPUBs in Spine-Lesereihenfolge, maximal 40 MB und 3 Millionen extrahierte Zeichen. PDF maximal 1.000 Seiten, EPUB maximal 1.000 Kapitel. Gescanntes PDF benötigt vorher OCR; DRM wird nicht umgangen. Bitte nur eigene oder berechtigt nutzbare Texte importieren.
 
 Ohne KI liefert das Wörterbuch Bedeutungen und Worterklärungen. **Für fremde Originaltexte werden keine Satzübersetzungen und keine historischen Zusammenfassungen erfunden.** Fehlende deutsche Satz-/Kontextanalysen werden in der Oberfläche benannt und der Originalabschnitt bleibt lesbar.
 

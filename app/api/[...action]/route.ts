@@ -11,6 +11,11 @@ import {
   exportData,
 } from "@/lib/db";
 import { extractDocument } from "@/lib/importer";
+import {
+  MAX_BOOK_BYTES,
+  MAX_BOOK_MEGABYTES,
+  MAX_BOOK_REQUEST_BYTES,
+} from "@/lib/import-limits";
 import { lookupTdk } from "@/lib/tdk";
 import { analyzeWithAI } from "@/lib/ai";
 export const runtime = "nodejs";
@@ -114,15 +119,19 @@ export async function POST(
       case "import": {
         if (
           Number(request.headers.get("content-length") || 0) >
-          16 * 1024 * 1024
+          MAX_BOOK_REQUEST_BYTES
         )
-          throw new Error("Die Datei darf maximal 15 MB groß sein.");
+          throw new Error(
+            `Die Datei darf maximal ${MAX_BOOK_MEGABYTES} MB groß sein.`,
+          );
         const form = await request.formData();
         const file = form.get("file");
         if (!(file instanceof File))
           throw new Error("Bitte eine Datei auswählen.");
-        if (file.size > 15 * 1024 * 1024)
-          throw new Error("Die Datei darf maximal 15 MB groß sein.");
+        if (file.size > MAX_BOOK_BYTES)
+          throw new Error(
+            `Die Datei darf maximal ${MAX_BOOK_MEGABYTES} MB groß sein.`,
+          );
         const document = await extractDocument(file);
         const text = document.text.normalize("NFC");
         const pages = document.pages.map((page) => ({

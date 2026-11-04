@@ -10,6 +10,7 @@ import {
   Download,
 } from "lucide-react";
 import type { State, Settings } from "@/lib/types";
+import { MAX_BOOK_MEGABYTES } from "@/lib/import-limits";
 export function ImportForm({
   data,
   busy,
@@ -81,7 +82,8 @@ export function ImportForm({
           aria-label="Buchdatei auswählen"
         />
         <small>
-          TXT (UTF-8), PDF mit Textebene oder EPUB · bis 15 MB · ohne DRM
+          TXT (UTF-8), PDF mit Textebene oder EPUB · bis {MAX_BOOK_MEGABYTES} MB
+          · ohne DRM
         </small>
       </div>
       <label className="setting-field level-field">

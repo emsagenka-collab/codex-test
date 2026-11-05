@@ -1,0 +1,98 @@
+[
+  {
+    "word": "ben",
+    "difficulty": 1,
+    "meaning": "Muttermal",
+    "explanation": "Kleiner dunkler Hautfleck.",
+    "modern": "cilt lekesi",
+    "related": "deri",
+    "note": "Wortschatz für Alltag und allgemeine Texte. Die Bedeutung richtet sich nach dem Buchsatz.",
+    "demo": "",
+    "translation": "",
+    "context": ""
+  },
+  {
+    "word": "baldız",
+    "difficulty": 1,
+    "meaning": "Schwägerin der Ehefrau",
+    "explanation": "Schwester der eigenen Ehefrau.",
+    "modern": "karının kız kardeşi",
+    "related": "evlilik",
+    "note": "Wortschatz für Alltag und allgemeine Texte. Die Bedeutung richtet sich nach dem Buchsatz.",
+    "demo": "",
+    "translation": "",
+    "context": ""
+  },
+  {
+    "word": "ehliyet",
+    "difficulty": 3,
+    "meaning": "Befähigung / Berechtigung",
+    "explanation": "Die Eignung oder Berechtigung für eine Aufgabe; heute auch der Führerschein.",
+    "modern": "yeterlik; sürücü belgesi",
+    "related": "ehil · yetkinlik",
+    "note": "Gehobener, fachlicher oder historischer Sprachgebrauch. Die genaue Bedeutung ergibt sich aus dem Buchsatz.",
+    "demo": "",
+    "translation": "",
+    "context": ""
+  },
+  {
+    "word": "varis",
+    "difficulty": 3,
+    "meaning": "Erbe / Nachfolger",
+    "explanation": "Eine Person, die eine Hinterlassenschaft oder eine überlieferte Aufgabe übernimmt.",
+    "modern": "mirasçı",
+    "related": "miras · halef",
+    "note": "Gehobener, fachlicher oder historischer Sprachgebrauch. Die genaue Bedeutung ergibt sich aus dem Buchsatz.",
+    "demo": "",
+    "translation": "",
+    "context": ""
+  },
+  {
+    "word": "kâr",
+    "difficulty": 2,
+    "meaning": "Gewinn",
+    "explanation": "Der nach Abzug der Kosten verbleibende wirtschaftliche Überschuss.",
+    "modern": "kazanç",
+    "related": "kârlı · zarar",
+    "note": "Wortschatz für anspruchsvollere Erzählungen und Sachtexte. Die Bedeutung richtet sich nach dem Buchsatz.",
+    "demo": "",
+    "translation": "",
+    "context": ""
+  },
+  {
+    "word": "deneycilik",
+    "difficulty": 2,
+    "meaning": "Experimentierfreude",
+    "explanation": "Ausrichtung auf das Erproben neuer Formen oder Verfahren.",
+    "modern": "deneyi temel alma",
+    "related": "deney · yenilik",
+    "note": "Wortschatz für anspruchsvollere Erzählungen und Sachtexte. Die Bedeutung richtet sich nach dem Buchsatz.",
+    "demo": "",
+    "translation": "",
+    "context": ""
+  },
+  {
+    "word": "sünnet",
+    "difficulty": 3,
+    "meaning": "prophetische Tradition; Beschneidung",
+    "explanation": "Das Wort kann das religiöse Vorbild Mohammeds oder den rituellen Eingriff der männlichen Beschneidung bezeichnen.",
+    "modern": "peygamber örneği; dinî kesim",
+    "related": "hadis · gelenek",
+    "note": "Gehobener, fachlicher oder historischer Sprachgebrauch. Die Bedeutung richtet sich nach dem Buchsatz.",
+    "demo": "",
+    "translation": "",
+    "context": ""
+  },
+  {
+    "word": "tahvil",
+    "difficulty": 2,
+    "meaning": "Anleihe",
+    "explanation": "Eine handelbare Schuldverschreibung mit festgelegten Bedingungen ausgeben.",
+    "modern": "borçlanma senedi",
+    "related": "faiz · yatırım",
+    "note": "Wortschatz für anspruchsvollere Erzählungen und Sachtexte. Die Bedeutung richtet sich nach dem Buchsatz.",
+    "demo": "",
+    "translation": "",
+    "context": ""
+  }
+]

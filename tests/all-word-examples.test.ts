@@ -1,0 +1,98 @@
+import { test } from "node:test";
+import assert from "node:assert/strict";
+import { indexBookSource } from "../lib/book-source";
+import { learningLexicon } from "../lib/lexicon";
+import { exampleSentences } from "../lib/example-sentences";
+import { sentences } from "../lib/learning";
+
+test("every dictionary word receives all suitable prose examples, including dialogue, abbreviations and word wraps", () => {
+  for (const { word } of learningLexicon) {
+    const about = word === "hakkında" ? "için" : "hakkında";
+    const today = word === "bugün" ? "Şimdi" : "Bugün";
+    const breakAt = Math.max(1, Math.floor(word.length / 2));
+    const split = `${word.slice(0, breakAt)}-\n${word.slice(breakAt)}`;
+    const texts = [
+      `a) ${word.toLocaleUpperCase("tr-TR")}\nHz. Zeynep, ${word} ${about} konuştu.`,
+      `Zeynep dedi:\n– “${today} ${word} ${about}\nkonuşacağız,” dedi.`,
+      `Zeynep ${split} ${about} düşündü.`,
+      `Zeynep ${word} ${about} konuştu!`,
+      `• ${word}.\n\na) ${word}.`,
+    ];
+    const index = indexBookSource(
+      texts.map((text, i) => ({ id: i + 1, sectionNumber: i + 1, text })),
+      false,
+    );
+    const result = index.forWord(word);
+    assert.equal(result.examples.length, 4, word);
+    assert.equal(result.frequency, 7, word);
+    assert.ok(
+      result.examples.every((example) =>
+        example.section.text.includes(example.raw),
+      ),
+      word,
+    );
+    assert.ok(
+      result.examples.every((example) => !example.sentence.includes("-\n")),
+      word,
+    );
+    assert.match(result.examples[0].sentence, /^Hz\. Zeynep,/u);
+  }
+});
+
+test("quoted dialogue and wrapped suffixes do not suppress the following prose", () => {
+  const raw =
+    "Öğretmen ona:\n– “Sakin ol,” dedi.\nSevincini gizle-\ndi. Ardından merhamet hakkında\nkonuştu.\n– Metanetini koru.\nYeni bir kitap okudu.";
+  const result = exampleSentences(raw);
+  assert.ok(
+    result.some((sentence) => sentence.includes("merhamet hakkında\nkonuştu.")),
+  );
+  // An unintroduced dash remains a list item.
+  assert.ok(!result.some((sentence) => sentence.includes("Metanetini koru")));
+});
+
+test("Turkish abbreviations, ordinals and numbers preserve complete, exact source spans", () => {
+  const quotes = [
+    "Hz. Deniz, fedakârlık hakkında konuştu.",
+    "O, hicretin II. yılında 3.000 kişiyle görüştü.",
+    "Hicretin II. Yılında herkes bir araya geldi.",
+    "Hicretin 8. yılında geri döndü.",
+    "O gün evde idi.",
+    "Hz. Deniz (s.a.s.) hakkında konuştu.",
+  ];
+  const text = quotes.join(" ");
+  assert.deepEqual(sentences(text), quotes);
+  assert.deepEqual(exampleSentences(text), quotes);
+});
+
+test("thousands and decimals at the start of prose are not numbered lists", () => {
+  for (const sentence of [
+    "10.000 kişi merhamet hakkında konuştu.",
+    "3.5 saat boyunca metanetini korudu.",
+  ])
+    assert.deepEqual(exampleSentences(sentence), [sentence]);
+  assert.deepEqual(exampleSentences("1. Merhamet hakkında konuştu."), []);
+  assert.deepEqual(
+    exampleSentences("a) METANETİNİ KORUDU.\nyoluna devam etti."),
+    [],
+  );
+});
+
+test("all learning words use repaired inflected prose and omit unverified damaged sentences", () => {
+  const text =
+    "Harp sırasında bera-\nberdi. Sonra merhamet göste-\nriyordu.\n\nHarp sırasında qzxv-\nabcxyz gördü.\n\nTürk-\nAlman ilişkilerinde merhamet gösterdi.";
+  const source = indexBookSource([{ id: 1, sectionNumber: 1, text }], false);
+  const war = source.forWord("harp");
+  assert.equal(war.examples.length, 1);
+  assert.equal(war.examples[0].sentence, "Harp sırasında beraberdi.");
+  assert.ok(war.examples[0].raw.includes("bera-\nberdi"));
+  assert.equal(war.frequency, 2);
+  const mercy = source.forWord("merhamet");
+  assert.deepEqual(
+    mercy.examples.map((e) => e.sentence),
+    [
+      "Sonra merhamet gösteriyordu.",
+      "Türk-Alman ilişkilerinde merhamet gösterdi.",
+    ],
+  );
+  assert.ok(text.includes(mercy.examples[0].raw));
+});

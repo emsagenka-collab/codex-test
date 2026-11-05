@@ -1,0 +1,21 @@
+KELIME AUF WINDOWS STARTEN
+
+1. Node.js 24 LTS oder neuer von https://nodejs.org installieren.
+   Beim Installieren die vorgeschlagenen Einstellungen beibehalten.
+2. Die ZIP-Datei vollstaendig entpacken (Rechtsklick > Alle extrahieren).
+3. Im entpackten Ordner Kelime-starten.bat doppelt anklicken.
+4. Beim ersten Start kurz warten: Pakete werden aus dem Internet geladen.
+   Der Browser oeffnet sich automatisch, sobald die App bereit ist.
+5. In der App "Erst mit der Demo entdecken" waehlen oder ein Buch importieren.
+
+Das schwarze Startfenster waehrend der Nutzung offen lassen.
+Zum Beenden das Startfenster schliessen. Beim naechsten Mal wieder
+Kelime-starten.bat anklicken.
+
+Deine Buecher und Fortschritte liegen im Unterordner data.
+Diesen Ordner nicht loeschen. Bei einem Update immer aufbewahren.
+Die App braucht keinen API-Schluessel fuer Demo und Offline-Woerterbuch.
+Die optionale KI-Anbindung und deren Grenzen sind in README.md beschrieben.
+
+Falls der Browser nicht automatisch aufgeht: http://localhost:3000 oeffnen.
+Falls ein Fehler erscheint: die Meldung im Startfenster mitteilen.
